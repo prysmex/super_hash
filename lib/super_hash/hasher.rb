@@ -158,48 +158,53 @@ module SuperHash
     end
   
     #allow a specific instance not to require a set of attributes
-    attr_reader :__skip_required_attrs
+    attr_reader :options
   
     # You may initialize with an attributes hash
-    def initialize(init_attributes = {}, &block)
-  
-      init_attributes = self.symbolize_recursive(init_attributes)
-      super(&block)
+    def initialize(init_value = nil, options={}, &block)
+
+      instance_variable_set('@options', options)
       
-      instance_variable_set('@__skip_required_attrs',
-        init_attributes.delete(:__skip_required_attrs) || []
-      )
-      
-      #set init_attributes
-      init_attributes.each do |att, value|
-        self[att] = value
-      end
-  
-      #set defaults
-      self.class.attributes.each do |name, options|
-        next if init_attributes.key?(name)
-        if !options[:default].nil? && (options[:type] && options[:type].default?)
-          raise ArgumentError.new('having both default and type default is not supported')
+      if init_value.is_a? ::Hash
+        init_value = self.symbolize_recursive(init_value)
+
+        #set init_value
+        init_value.each do |att, value|
+          self[att] = value
         end
-        #set from options[:default]
-        if !options[:default].nil?
-          value = begin
-            val = options[:default].dup
-            if val.is_a?(Proc)
-              val.arity == 1 ? val.call(self) : val.call
-            else
-              val
-            end
-          rescue TypeError
-            options[:default]
+
+        #set defaults
+        self.class.attributes.each do |name, options|
+          next if init_value.key?(name)
+          if !options[:default].nil? && (options[:type] && options[:type].default?)
+            raise ArgumentError.new('having both default and type default is not supported')
           end
-          self[name] = value unless value.nil? && !attr_required?(name)
-        #set from options[:type]
-        elsif !options[:type].nil? && options[:type].default?
-          value = options[:type][Dry::Types::Undefined]
-          self[name] = value unless value.nil? && !attr_required?(name)
+          #set from options[:default]
+          if !options[:default].nil?
+            value = begin
+              val = options[:default].dup
+              if val.is_a?(Proc)
+                val.arity == 1 ? val.call(self) : val.call
+              else
+                val
+              end
+            rescue TypeError
+              options[:default]
+            end
+            self[name] = value unless value.nil? && !attr_required?(name)
+          #set from options[:type]
+          elsif !options[:type].nil? && options[:type].default?
+            value = options[:type][Dry::Types::Undefined]
+            self[name] = value unless value.nil? && !attr_required?(name)
+          end
         end
+
+      else
+        puts init_value
+        super(init_value, &block)
       end
+
+      super(&block)
   
       validate_all_attributes!
     end
@@ -282,7 +287,7 @@ module SuperHash
   
     def attr_required?(attribute)
   
-      !__skip_required_attrs.include?(attribute) &&
+      !(options[:skip_required_attrs] || []).include?(attribute) &&
       self.class.attr_required?(attribute)
   
       # condition = self.class.required_attributes[attribute][:condition]
