@@ -162,8 +162,7 @@ module SuperHash
   
     # You may initialize with an attributes hash
     def initialize(init_value = nil, options={}, &block)
-
-      instance_variable_set('@options', options)
+      instance_variable_set('@options', options || {})
       
       if init_value.is_a? ::Hash
         init_value = self.symbolize_recursive(init_value)
@@ -200,7 +199,6 @@ module SuperHash
         end
 
       else
-        puts init_value
         super(init_value, &block)
       end
 
@@ -286,7 +284,6 @@ module SuperHash
     end
   
     def attr_required?(attribute)
-  
       !(options[:skip_required_attrs] || []).include?(attribute) &&
       self.class.attr_required?(attribute)
   
