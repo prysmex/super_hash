@@ -133,14 +133,50 @@ class Person < ::SuperHash::Hasher
     attribute? :gender, {
         type: Types::String.optional # allow nil values
     }
-    attribute :data, {
-        type: Types::Hash.default({}.freeze)
+    attribute :children, {
+        type: Types::Array.default([].freeze)
     }
 end
 
 # notice that data is required but does not fail due to default value
-person = Person.new({name: 'John', age: 22}) # {:name=>"John", :age=>22, :nickname=>"John", :data=>{}}
+person = Person.new({name: 'John', age: 22}) # {:name=>"John", :age=>22, :nickname=>"John", :children=>[]}
 ```
+
+### Attribute transforms
+```ruby
+
+class Person < ::SuperHash::Hasher
+    
+    instance_variable_set('@allow_dynamic_attributes', true)
+    
+    CHILDREN_PROC = ->(instance, childrenArray) {
+        childrenArray.map do |child|
+            Person.new(child)
+        end
+    }
+    
+    attribute :'name'
+    attribute :'nickname', {
+        default: ->(instance) { instance[:name] }
+    }
+    attribute :'age', {
+        type: Types::Integer
+    }
+    attribute? :gender, {
+        type: Types::String.optional # allow nil values
+    }
+    attribute :children, {
+        type: Types::Array.default([].freeze),
+        transform: CHILDREN_PROC
+    }
+end
+
+person = Person.new({name: 'John', age: 22, children: [{name: 'John Jr', age: 2}]})
+
+person.class #Person
+person[:children].first.class #Person
+```
+
 
 ## Development
 
