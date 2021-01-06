@@ -1,8 +1,17 @@
 # SuperHash
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/super_hash`. To experiment with that code, run `bin/console` for an interactive prompt.
+The idea of the SuperHash is to provide hashes with extended functionality by adding the concept of 'attributes'.
+Attributes allow to have a powerful API for controlling what data can be set and more control over how the data is managed.
 
-TODO: Delete this and the text above, and describe your gem
+SuperHash provides:
+
+- All the power of dry-types gem for each attribute! [dry-types](https://github.com/dry-rb/dry-types).
+- Requiring some keys to be present with error raising
+- Setting a default value to a key
+- Setting transforms for specific keys
+- Ensuring all keys are symbolized
+- Accepting only whitelisted keys (default behavior)
+
 
 ## Installation
 
@@ -22,7 +31,116 @@ Or install it yourself as:
 
 ## Usage
 
-TODO: Write usage instructions here
+
+### Create a simple class
+Let's create Person class that extends from SuperHash::Hasher with 3 attributes: gender, name and age
+
+```ruby
+class Person < ::SuperHash::Hasher
+    attribute :'name'
+    attribute :'age'
+    attribute :gender
+end
+
+# we can now create our first person object
+person = Person.new({name: 'John', age: 22, gender: 'male'})
+person[:name] # 'John'
+person[:age] # 22
+person[:gender] # 'male'
+
+# SuperHash extends from a ruby Hash so we can call any methods we want on it!
+# person.is_a? Hash # => true
+```
+
+In this simple example all attributes are required, so this will fail 
+```ruby
+person = Person.new({name: 'John', age: 22}) # SuperHashExceptions::PropertyError (The attribute 'gender' is required)
+person = Person.new({name: 'John', age: 22, gender: nil}) # SuperHashExceptions::PropertyError (The attribute 'gender' is required)
+```
+
+### Optional attributes
+To create an optional attribute we use the `attribute?` class methodm instead of `attribute`.
+
+```ruby
+class Person < ::SuperHash::Hasher
+    attribute :'name'
+    attribute :'age'
+    attribute? :gender
+end
+
+# this now works!
+person = Person.new({name: 'John', age: 22})
+person2 = Person.new({name: 'John', age: 22, gender: 'male'})
+```
+
+### Dynamic attributes
+
+In the previous examples, assigning an unknown attribute will cause an exception
+```ruby
+person = Person.new({name: 'John', age: 22, likes_coffee: false}) # SuperHashExceptions::PropertyError (The attribute 'likes_coffee' is required)
+```
+
+To allow dynamic attributes we need to set the instance variable `@allow_dynamic_attributes` as true
+```ruby
+class Person < ::SuperHash::Hasher
+    
+    instance_variable_set('@allow_dynamic_attributes', true)
+    
+    attribute :'name'
+    attribute :'age'
+    attribute? :gender
+end
+
+# Now we know John does not like coffee
+person = Person.new({name: 'John', age: 22, likes_coffee: false})
+```
+### Attribute validations
+
+If we want to add validations to our attributes we can use the power of dry-types gem
+```ruby
+class Person < ::SuperHash::Hasher
+    
+    instance_variable_set('@allow_dynamic_attributes', true)
+    
+    attribute :'name'
+    attribute :'age', {
+        type: Types::Integer
+    }
+    attribute? :gender, {
+        type: Types::String.optional # allow nil values
+    }
+end
+
+person = Person.new({name: 'John', age: '22'}) # Dry::Types::ConstraintError ("22" violates constraints (type?(Integer, "22") failed))
+person = Person.new({name: 'John', age: nil}) # SuperHashExceptions::PropertyError (The attribute 'age' is required)
+person = Person.new({name: 'John', age: 22, gender: nil}) # Notice the .optional modifier on `gender` type validation
+```
+
+### Default values
+
+```ruby
+class Person < ::SuperHash::Hasher
+    
+    instance_variable_set('@allow_dynamic_attributes', true)
+    
+    attribute :'name'
+    attribute :'nickname', {
+        default: ->(instance) { instance[:name] }
+    }
+    attribute :'age', {
+        type: Types::Integer
+    }
+    attribute? :gender, {
+        type: Types::String.optional # allow nil values
+    }
+    attribute :data, {
+        type: Types::Hash.default({}.freeze)
+    }
+end
+
+# notice that data is required but does not fail due to default value
+person = Person.new({name: 'John', age: 22}) # {:name=>"John", :age=>22, :nickname=>"John", :data=>{}}
+```
 
 ## Development
 
