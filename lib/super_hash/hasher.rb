@@ -29,32 +29,48 @@ class Hash
   end
 end
 
-#module for symbolizing hash keys recursively
-module SymbolizeHelper
-  def symbolize_recursive(hash)
-    {}.tap do |h|
-      hash.each { |key, value| h[key.to_sym] = map_value(value) }
-    end
-  end
-
-  def map_value(thing)
-    case thing
-    when Hash
-      symbolize_recursive(thing)
-    when Array
-      thing.map { |v| map_value(v) }
-    else
-      thing
-    end
-  end
-end
 
 module SuperHash
+
+  #module for symbolizing hash keys recursively
+  module DeepKeysTransform
+
+    def self.deep_transform_keys(hash, &block)
+      {}.tap do |h|
+        hash.each do |key, value|
+          new_key = block_given? ? block.call(key) : key
+          h[new_key] = map_value(value, &block)
+        end
+      end
+    end
+
+    def self.map_value(thing, &block)
+      case thing
+      when Hash
+        deep_transform_keys(thing, &block)
+      when Array
+        thing.map { |v| map_value(v, &block) }
+      else
+        thing
+      end
+    end
+
+    def self.symbolize_recursive(hash)
+      deep_transform_keys(hash) do |key|
+        key.to_sym
+      end
+    end
+
+    def self.stringify_recursive(hash)
+      deep_transform_keys(hash) do |key|
+        key.to_s
+      end
+    end
+  end
 
   class Hasher < ::Hash
 
     include Types
-    include SymbolizeHelper
     # include SuperHashExceptions
   
     # The idea of the SuperHash is to have hashes with extended
@@ -132,10 +148,12 @@ module SuperHash
       attr_reader :attributes
       attr_reader :after_set_callbacks
       attr_reader :allow_dynamic_attributes
+      attr_reader :ignore_nil_default_values
     end
     instance_variable_set('@attributes', {})
     instance_variable_set('@after_set_callbacks', [])
     instance_variable_set('@allow_dynamic_attributes', false)
+    instance_variable_set('@ignore_nil_default_values', true)
   
     # when a class in inherited from this one, add it to subclasses and
     # set instance variables
@@ -145,6 +163,7 @@ module SuperHash
       klass.instance_variable_set('@attributes', attributes.dup)
       klass.instance_variable_set('@after_set_callbacks', after_set_callbacks.dup)
       klass.instance_variable_set('@allow_dynamic_attributes', allow_dynamic_attributes)
+      klass.instance_variable_set('@ignore_nil_default_values', ignore_nil_default_values)
     end
   
     # Check to see if the specified attribute has been defined.
@@ -165,7 +184,7 @@ module SuperHash
       instance_variable_set('@options', options || {})
       
       if init_value.is_a? ::Hash
-        init_value = self.symbolize_recursive(init_value)
+        init_value = SuperHash::DeepKeysTransform.symbolize_recursive(init_value)
 
         #set init_value
         init_value.each do |att, value|
@@ -175,12 +194,12 @@ module SuperHash
         #set defaults
         self.class.attributes.each do |name, options|
           next if init_value.key?(name)
-          if !options[:default].nil? && (options[:type] && options[:type].default?)
+          if options.key?(:default) && options[:type]&.default?
             raise ArgumentError.new('having both default and type default is not supported')
           end
           #set from options[:default]
-          if !options[:default].nil?
-            value = begin
+          value = if options.key?(:default)
+            begin
               val = options[:default].dup
               if val.is_a?(Proc)
                 val.arity == 1 ? val.call(self) : val.call
@@ -190,12 +209,11 @@ module SuperHash
             rescue TypeError
               options[:default]
             end
-            self[name] = value unless value.nil? && !attr_required?(name)
           #set from options[:type]
-          elsif !options[:type].nil? && options[:type].default?
+          elsif options[:type]&.default?
             value = options[:type][Dry::Types::Undefined]
-            self[name] = value unless value.nil? && !attr_required?(name)
           end
+          self[name] = value unless value.nil? && !attr_required?(name) && self.class.ignore_nil_default_values
         end
 
       else
@@ -240,7 +258,7 @@ module SuperHash
     end
   
     # Set a value. Only works on pre-existing attributes,
-    # unlesss @allow_dynamic_attributes is true.
+    # unless @allow_dynamic_attributes is true.
     def []=(attribute, value)
       if !attribute.is_a? ::Symbol
         raise ArgumentError.new('only symbols are supported as attributes')
@@ -260,7 +278,7 @@ module SuperHash
         transform = self.class.attributes[attribute][:transform]
         if !transform.nil?
           if transform.is_a?(Proc)
-            value = transform.call(self, value)
+            value = transform.call(self, value, attribute)
           end
         end
         #transform value with type
