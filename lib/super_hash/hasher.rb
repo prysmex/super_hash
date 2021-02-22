@@ -128,6 +128,12 @@ module SuperHash
       options = options.merge({required: true})
       _register_attribute(attribute_name, options)
     end
+
+    #updates or registers an attribute
+    def self.update_attribute(attribute_name, options = {})
+      options = (attributes[attribute_name] || {}).merge(options)
+      _register_attribute(attribute_name, options)
+    end
   
     #The actual attribute registration method.
     def self._register_attribute(attribute_name, options)
@@ -182,6 +188,10 @@ module SuperHash
     # You may initialize with an attributes hash
     def initialize(init_value = nil, options={}, &block)
       instance_variable_set('@options', options || {})
+
+      if options[:preinit_proc]
+        options[:preinit_proc].call(self)
+      end
       
       if init_value.is_a? ::Hash
         init_value = SuperHash::DeepKeysTransform.symbolize_recursive(init_value)
@@ -198,7 +208,7 @@ module SuperHash
             raise ArgumentError.new('having both default and type default is not supported')
           end
           #set from options[:default]
-          value = if options.key?(:default)
+          default_value = if options.key?(:default)
             begin
               val = options[:default].dup
               if val.is_a?(Proc)
@@ -211,9 +221,9 @@ module SuperHash
             end
           #set from options[:type]
           elsif options[:type]&.default?
-            value = options[:type][Dry::Types::Undefined]
+            options[:type][Dry::Types::Undefined]
           end
-          self[name] = value unless value.nil? && !attr_required?(name) && self.class.ignore_nil_default_values
+          self[name] = default_value unless default_value.nil? && !attr_required?(name) && self.class.ignore_nil_default_values
         end
 
       else
