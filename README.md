@@ -177,7 +177,7 @@ person.class #Person
 person[:children].first.class #Person
 ```
 
-### Callbacks (ToDo)
+### Callbacks
 ```ruby
 class SomeHash < ::SuperHash::Hasher
     attribute :'main_data'
