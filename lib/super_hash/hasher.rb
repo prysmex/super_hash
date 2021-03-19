@@ -1,19 +1,6 @@
 require_relative 'version'
 require 'dry-types'
 
-#include support for DryTypes
-module Types
-  include Dry.Types()
-end
-
-module SuperHashExceptions
-  class PropertyError < StandardError
-    def initialize(msg='')
-      super(msg)
-    end
-  end
-end
-
 class Hash
   def bury *args
     if args.count < 2
@@ -30,7 +17,21 @@ class Hash
 end
 
 
+#include support for DryTypes
+module Types
+  include Dry.Types()
+end
+
 module SuperHash
+
+
+  module Exceptions
+    class PropertyError < StandardError
+      def initialize(msg='')
+        super(msg)
+      end
+    end
+  end
 
   #module for symbolizing hash keys recursively
   module DeepKeysTransform
@@ -71,7 +72,7 @@ module SuperHash
   class Hasher < ::Hash
 
     include Types
-    # include SuperHashExceptions
+    # include SuperHash::Exceptions
   
     # The idea of the SuperHash is to have hashes with extended
     # functionality by adding the concept of 'attributes'.
@@ -134,18 +135,16 @@ module SuperHash
       options = (attributes[attribute_name] || {}).merge(options)
       _register_attribute(attribute_name, options)
     end
+
+    #unregisters an attribute
+    def self.remove_attribute(attribute_name)
+      instance_variable_set('@attributes', attributes.reject{|k,v| k == attribute_name})
+    end
   
     #The actual attribute registration method.
     def self._register_attribute(attribute_name, options)
+      raise TypeError.new('attribute_name must be a symbol') unless attribute_name.is_a?(::Symbol)
       attributes[attribute_name] = options
-      #Ensure subclasses also register the attribute
-      if defined? @subclasses
-        if options[:required]
-          @subclasses.each{ |klass| klass.attribute(attribute_name, options) }
-        else
-          @subclasses.each{ |klass| klass.attribute?(attribute_name, options) }
-        end
-      end
       self
     end
   
@@ -166,7 +165,7 @@ module SuperHash
     def self.inherited(klass)
       super
       (@subclasses ||= Set.new) << klass
-      klass.instance_variable_set('@attributes', attributes.dup)
+      klass.instance_variable_set('@attributes', Marshal.load(Marshal.dump(attributes)))
       klass.instance_variable_set('@after_set_callbacks', after_set_callbacks.dup)
       klass.instance_variable_set('@allow_dynamic_attributes', allow_dynamic_attributes)
       klass.instance_variable_set('@ignore_nil_default_values', ignore_nil_default_values)
@@ -186,7 +185,7 @@ module SuperHash
     attr_reader :options
   
     # You may initialize with an attributes hash
-    def initialize(init_value = nil, options={}, &block)
+    def initialize(init_value = nil, options={})
       instance_variable_set('@options', options || {})
 
       if options[:preinit_proc]
@@ -195,42 +194,39 @@ module SuperHash
       
       if init_value.is_a? ::Hash
         init_value = SuperHash::DeepKeysTransform.symbolize_recursive(init_value)
-
+  
         #set init_value
         init_value.each do |att, value|
           self[att] = value
         end
-
-        #set defaults
-        self.class.attributes.each do |name, options|
-          next if init_value.key?(name)
-          if options.key?(:default) && options[:type]&.default?
-            raise ArgumentError.new('having both default and type default is not supported')
-          end
-          #set from options[:default]
-          default_value = if options.key?(:default)
-            begin
-              val = options[:default].dup
-              if val.is_a?(Proc)
-                val.arity == 1 ? val.call(self) : val.call
-              else
-                val
-              end
-            rescue TypeError
-              options[:default]
-            end
-          #set from options[:type]
-          elsif options[:type]&.default?
-            options[:type][Dry::Types::Undefined]
-          end
-          self[name] = default_value unless default_value.nil? && !attr_required?(name) && self.class.ignore_nil_default_values
-        end
-
-      else
-        super(init_value, &block)
       end
 
-      super(&block)
+      #set defaults
+      self.class.attributes.each do |name, options|
+        next if self.key?(name)
+        if options.key?(:default) && options[:type]&.default?
+          raise ArgumentError.new('having both default and type default is not supported')
+        end
+        #set from options[:default]
+        default_value = if options.key?(:default)
+          begin
+            val = options[:default].dup
+            if val.is_a?(Proc)
+              val.arity == 1 ? val.call(self) : val.call
+            else
+              val
+            end
+          rescue TypeError
+            options[:default]
+          end
+        #set from options[:type]
+        elsif options[:type]&.default?
+          options[:type][Dry::Types::Undefined]
+        end
+        self[name] = default_value unless default_value.nil? && !attr_required?(name) && self.class.ignore_nil_default_values
+      end
+
+      super(init_value) unless init_value.is_a? ::Hash
   
       validate_all_attributes!
     end
@@ -250,7 +246,7 @@ module SuperHash
       value = value || self[name]
       # options = prop[1]
       if value.nil? && attr_required?(name)
-        raise SuperHashExceptions::PropertyError, "The attribute '#{name}' is required"
+        raise SuperHash::Exceptions::PropertyError, "The attribute '#{name}' is required"
       end
     end
   
@@ -271,7 +267,7 @@ module SuperHash
     # unless @allow_dynamic_attributes is true.
     def []=(attribute, value)
       if !attribute.is_a? ::Symbol
-        raise ArgumentError.new('only symbols are supported as attributes')
+        raise TypeError.new('only symbols are supported as attributes')
       end
   
       should_run_logic = if self.class.allow_dynamic_attributes
@@ -307,7 +303,7 @@ module SuperHash
   
     def assert_attribute_exists!(attribute)
       unless self.class.has_attribute?(attribute)
-        raise SuperHashExceptions::PropertyError, "The attribute '#{attribute}' is not defined for #{self.class.name}."
+        raise SuperHash::Exceptions::PropertyError, "The attribute '#{attribute}' is not defined for #{self.class.name}."
       end
     end
   

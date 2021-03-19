@@ -54,8 +54,8 @@ person[:gender] # 'male'
 
 In this simple example all attributes are required, so this will fail 
 ```ruby
-person = Person.new({name: 'John', age: 22}) # SuperHashExceptions::PropertyError (The attribute 'gender' is required)
-person = Person.new({name: 'John', age: 22, gender: nil}) # SuperHashExceptions::PropertyError (The attribute 'gender' is required)
+person = Person.new({name: 'John', age: 22}) # SuperHash::Exceptions::PropertyError (The attribute 'gender' is required)
+person = Person.new({name: 'John', age: 22, gender: nil}) # SuperHash::Exceptions::PropertyError (The attribute 'gender' is required)
 ```
 
 ### Optional attributes
@@ -77,7 +77,7 @@ person2 = Person.new({name: 'John', age: 22, gender: 'male'})
 
 In the previous examples, assigning an unknown attribute will cause an exception
 ```ruby
-person = Person.new({name: 'John', age: 22, likes_coffee: false}) # SuperHashExceptions::PropertyError (The attribute 'likes_coffee' is required)
+person = Person.new({name: 'John', age: 22, likes_coffee: false}) # SuperHash::Exceptions::PropertyError (The attribute 'likes_coffee' is required)
 ```
 
 To allow dynamic attributes we need to set the instance variable `@allow_dynamic_attributes` as true
@@ -112,7 +112,7 @@ class Person < ::SuperHash::Hasher
 end
 
 person = Person.new({name: 'John', age: '22'}) # Dry::Types::ConstraintError ("22" violates constraints (type?(Integer, "22") failed))
-person = Person.new({name: 'John', age: nil}) # SuperHashExceptions::PropertyError (The attribute 'age' is required)
+person = Person.new({name: 'John', age: nil}) # SuperHash::Exceptions::PropertyError (The attribute 'age' is required)
 person = Person.new({name: 'John', age: 22, gender: nil}) # Notice the .optional modifier on `gender` type validation
 ```
 
@@ -178,6 +178,24 @@ person[:children].first.class #Person
 ```
 
 ### Callbacks (ToDo)
+```ruby
+class SomeHash < ::SuperHash::Hasher
+    attribute :'main_data'
+    attribute :'main_data_mirror'
+    after_set ->(attr_name, value) {
+      self[:main_data_mirror] = self[:main_data] if attr_name == :main_data
+    }
+end
+
+some_hash = SomeHash.new({main_data: {foo: 22} })
+some_hash[:main_data_mirror][:foo] # => 22
+```
+
+### Known issues
+
+You are not ensured that all keys will always be symbols, here are some examples:
+- Some methods like .merge!() will actually allow setting string keys without any errors being thrown
+- Manually setting a hash in a property `instance[:some_symbol_key] = {'a_string_key' => 2}`
 
 
 ## Development
