@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    super_hash (0.1.3)
+    super_hash (0.1.4)
       dry-types
 
 GEM
@@ -10,7 +10,6 @@ GEM
     ansi (1.5.0)
     builder (3.2.4)
     concurrent-ruby (1.1.8)
-    diff-lcs (1.4.4)
     dry-configurable (0.12.1)
       concurrent-ruby (~> 1.0)
       dry-core (~> 0.5, >= 0.5.0)
@@ -36,19 +35,6 @@ GEM
       minitest (>= 5.0)
       ruby-progressbar
     rake (10.5.0)
-    rspec (3.9.0)
-      rspec-core (~> 3.9.0)
-      rspec-expectations (~> 3.9.0)
-      rspec-mocks (~> 3.9.0)
-    rspec-core (3.9.3)
-      rspec-support (~> 3.9.3)
-    rspec-expectations (3.9.4)
-      diff-lcs (>= 1.2.0, < 2.0)
-      rspec-support (~> 3.9.0)
-    rspec-mocks (3.9.1)
-      diff-lcs (>= 1.2.0, < 2.0)
-      rspec-support (~> 3.9.0)
-    rspec-support (3.9.4)
     ruby-progressbar (1.11.0)
 
 PLATFORMS
@@ -59,7 +45,6 @@ DEPENDENCIES
   minitest (>= 5.14)
   minitest-reporters (>= 1.4)
   rake (~> 10.0)
-  rspec (~> 3.9.0)
   super_hash!
 
 BUNDLED WITH

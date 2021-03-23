@@ -1,78 +1,17 @@
 require_relative 'version'
-require 'dry-types'
 
-class Hash
-  def bury *args
-    if args.count < 2
-      raise ArgumentError.new('2 or more arguments required')
-    elsif args.count == 2
-      self[args[0]] = args[1]
-    else
-      arg = args.shift
-      self[arg] = {} unless self[arg]
-      self[arg].bury(*args) unless args.empty?
-    end
-    self
-  end
-end
-
-
-#include support for DryTypes
 module Types
-  include Dry.Types()
+  def self.included(base)
+    require 'dry-types'
+    include Dry.Types()
+  end
 end
 
 module SuperHash
-
-
-  module Exceptions
-    class PropertyError < StandardError
-      def initialize(msg='')
-        super(msg)
-      end
-    end
-  end
-
-  #module for symbolizing hash keys recursively
-  module DeepKeysTransform
-
-    def self.deep_transform_keys(hash, &block)
-      {}.tap do |h|
-        hash.each do |key, value|
-          new_key = block_given? ? block.call(key) : key
-          h[new_key] = map_value(value, &block)
-        end
-      end
-    end
-
-    def self.map_value(thing, &block)
-      case thing
-      when Hash
-        deep_transform_keys(thing, &block)
-      when Array
-        thing.map { |v| map_value(v, &block) }
-      else
-        thing
-      end
-    end
-
-    def self.symbolize_recursive(hash)
-      deep_transform_keys(hash) do |key|
-        key.to_sym
-      end
-    end
-
-    def self.stringify_recursive(hash)
-      deep_transform_keys(hash) do |key|
-        key.to_s
-      end
-    end
-  end
-
   class Hasher < ::Hash
-
+    
+    #ToDo only include if configured
     include Types
-    # include SuperHash::Exceptions
   
     # The idea of the SuperHash is to have hashes with extended
     # functionality by adding the concept of 'attributes'.
