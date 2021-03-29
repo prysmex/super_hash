@@ -1,6 +1,30 @@
 module SuperHash
 
   module Helpers
+
+    def bury(*args)
+      Helpers.bury(self, *args)
+    end
+
+    def flatten_to_root
+      Helpers.bury(self)
+    end
+
+    def deep_transform_keys(&block)
+      DeepKeysTransform.deep_transform_keys(self, &block)
+    end
+
+    def symbolize_recursive
+      DeepKeysTransform.symbolize_recursive(self)
+    end
+    
+    def stringify_recursive
+      DeepKeysTransform.stringify_recursive(self)
+    end
+    
+  end
+
+  module Utils
     
     def self.bury(hash, *args)
       raise TypeError.new("first argument must be a Hash to mutate, got #{hash.class}") unless hash.is_a?(Hash)
@@ -38,19 +62,8 @@ module SuperHash
       {}.tap do |h|
         hash.each do |key, value|
           new_key = block_given? ? block.call(key) : key
-          h[new_key] = map_value(value, &block)
+          h[new_key] = transform_value(value, &block)
         end
-      end
-    end
-
-    def self.map_value(thing, &block)
-      case thing
-      when Hash
-        deep_transform_keys(thing, &block)
-      when Array
-        thing.map { |v| map_value(v, &block) }
-      else
-        thing
       end
     end
 
@@ -63,6 +76,19 @@ module SuperHash
     def self.stringify_recursive(hash)
       deep_transform_keys(hash) do |key|
         key.to_s
+      end
+    end
+
+    private
+
+    def self.transform_value(thing, &block)
+      case thing
+      when Hash
+        deep_transform_keys(thing, &block)
+      when Array
+        thing.map { |v| transform_value(v, &block) }
+      else
+        thing
       end
     end
 

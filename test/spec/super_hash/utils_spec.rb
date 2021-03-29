@@ -6,7 +6,7 @@ class HelperTest < Minitest::Test
     test_path = [:'tes.yt', 'as/?df', '__.__', '93.90', 9]
     value = 1
     hash = {}
-    SuperHash::Helpers.bury(hash, *test_path, value)
+    SuperHash::Utils.bury(hash, *test_path, value)
     assert_equal value, hash.dig(*test_path)
   end
 
@@ -14,8 +14,8 @@ class HelperTest < Minitest::Test
     hash = {}
     path_1 = [:some_data, :test_1]
     path_2 = [:some_data, :test_2]
-    SuperHash::Helpers.bury(hash, *path_1, true)
-    SuperHash::Helpers.bury(hash, *path_2, true)
+    SuperHash::Utils.bury(hash, *path_1, true)
+    SuperHash::Utils.bury(hash, *path_2, true)
     assert_equal true, hash.dig(*path_1)
     assert_equal true, hash.dig(*path_2)
   end
@@ -30,7 +30,7 @@ class HelperTest < Minitest::Test
   #     ]
   #   }
 
-  #   flattened = SuperHash::Helpers.flatten_to_root({
+  #   flattened = SuperHash::Utils.flatten_to_root({
   #     level_1_1: {
   #       level_2_1: {
   #         level_3_1: [1,2],
