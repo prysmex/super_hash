@@ -176,6 +176,11 @@ person = Person.new({name: 'John', age: 22, children: [{name: 'John Jr', age: 2}
 person.class #Person
 person[:children].first.class #Person
 ```
+### Update attribute
+if you want to update an attribute's configuration, you can always use `update_attribute`
+```ruby
+ Person.update_attribute(:age, {required: false})
+```
 
 ### Callbacks
 ```ruby
