@@ -104,7 +104,14 @@ module SuperHash
     def self.inherited(klass)
       super
       (@subclasses ||= Set.new) << klass
-      klass.instance_variable_set('@attributes', Marshal.load(Marshal.dump(attributes)))
+      klass.instance_variable_set(
+        '@attributes',
+        attributes.each_with_object({}) do |(key, value), hash|
+          hash[key] = value.each_with_object({}) do |(k, v), h|
+            h[k] = Marshal.load(Marshal.dump(v)) rescue v&.dup
+          end
+        end
+      )
       klass.instance_variable_set('@after_set_callbacks', after_set_callbacks.dup)
       klass.instance_variable_set('@allow_dynamic_attributes', allow_dynamic_attributes)
       klass.instance_variable_set('@ignore_nil_default_values', ignore_nil_default_values)
