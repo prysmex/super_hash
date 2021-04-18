@@ -161,14 +161,14 @@ module SuperHash
       end
       
       if init_value.is_a? ::Hash
-        allow_dynamic = self.class.allow_dynamic_attributes
-        set_callbacks = self.class.after_set_callbacks
-        # ToDo remove this for optimal performance
+        
+        # ToDo remove this for performance issues
         init_value = SuperHash::DeepKeysTransform.symbolize_recursive(init_value)
-  
+        
         #set init_value
+        set_callbacks = self.class.after_set_callbacks
         init_value.each do |att, value|
-          self.[]=(att, value, true, allow_dynamic, set_callbacks)
+          self.[]=(att, value, skip_validate_attribute: true, after_set_callbacks: set_callbacks)
         end
       end
 
@@ -250,14 +250,14 @@ module SuperHash
   
     # Set a value. Only works on pre-existing attributes,
     # unless @allow_dynamic_attributes is true.
-    def []=(attribute, value, skip_validate_attribute = nil, allow_dynamic_attributes = nil, after_set_callbacks=nil)
+    def []=(attribute, value, skip_validate_attribute: nil, after_set_callbacks: nil)
       if !attribute.is_a? ::Symbol #15% performance loss
         raise TypeError.new('only symbols are supported as attributes')
       end
       
       validate_attribute!(attribute, value) unless skip_validate_attribute
 
-      unless allow_dynamic_attributes || self.class.allow_dynamic_attributes
+      unless self.class.allow_dynamic_attributes
         assert_attribute_exists!(attribute)
       end
 
