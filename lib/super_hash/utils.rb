@@ -7,7 +7,7 @@ module SuperHash
     end
 
     def flatten_to_root
-      Helpers.bury(self)
+      Helpers.flatten_to_root(self)
     end
 
     def deep_transform_keys(&block)
@@ -27,7 +27,7 @@ module SuperHash
   module Utils
     
     def self.bury(hash, *args)
-      raise TypeError.new("first argument must be a Hash to mutate, got #{hash.class}") unless hash.is_a?(Hash)
+      raise TypeError.new("first argument must be a Hash to mutate or should respond to .[]=, got #{hash.class}") unless hash.is_a?(Hash) || hash.respond_to?(:[]=)
       if args.count < 2
         raise ArgumentError.new('3 or more arguments required')
       elsif args.count == 2
