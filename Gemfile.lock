@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    super_hash (0.1.7)
+    super_hash (0.1.8)
       dry-types
 
 GEM
@@ -19,7 +19,7 @@ GEM
     dry-core (0.5.0)
       concurrent-ruby (~> 1.0)
     dry-inflector (0.2.0)
-    dry-logic (1.1.0)
+    dry-logic (1.1.1)
       concurrent-ruby (~> 1.0)
       dry-core (~> 0.5, >= 0.5)
     dry-types (1.5.1)

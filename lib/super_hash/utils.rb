@@ -40,17 +40,32 @@ module SuperHash
       hash
     end
   
-    def self.flatten_to_root(hash)
-      raise TypeError.new("must be a Hash, got #{hash.class}") unless hash.is_a?(Hash)
-      hash.each_with_object({}) do |(k, v), h|
-        if v.is_a? Hash
-          flatten_to_root(v).map do |h_k, h_v|
-            h["#{k}.#{h_k}".to_sym] = h_v
+    def self.flatten_to_root(object, flatten_arrays: false)
+      raise TypeError.new("must be a Hash or Array, got #{object.class}") unless [Hash, Array].include?(object.class)
+
+      case object
+      when Hash
+        object.each_with_object({}) do |(key, value), hash|
+          if (value.is_a?(Hash) || (value.is_a?(Array) && flatten_arrays)) && !value.empty?
+            flatten_to_root(value, {flatten_arrays: flatten_arrays}).map do |flat_k, v|
+              hash["#{key}.#{flat_k}".to_sym] = v
+            end
+          else
+            hash["#{key}".to_sym] = value
           end
-        else
-          h[k] = v
+        end
+      when Array
+        object.each_with_object({}).with_index do |(value, hash), index|
+          if (value.is_a?(Hash) || (value.is_a?(Array) && flatten_arrays)) && !value.empty?
+            flatten_to_root(value, {flatten_arrays: flatten_arrays}).map do |flat_k, v|
+              hash["#{index}.#{flat_k}".to_sym] = v
+            end
+          else
+            hash["#{index}".to_sym] = value
+          end
         end
       end
+    
     end
 
   end
