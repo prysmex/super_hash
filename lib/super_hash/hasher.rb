@@ -265,7 +265,7 @@ module SuperHash
       if attribute_def
         #transform value with transform
         transform = attribute_def[:transform]
-        value = transform.call(self, value, attribute) if transform.is_a? Proc
+        value = transform.call(attribute, value, self) if transform.is_a? Proc
 
         #transform value with type
         type = attribute_def[:type]

@@ -149,8 +149,8 @@ class Person < ::SuperHash::Hasher
     
     instance_variable_set('@allow_dynamic_attributes', true)
     
-    CHILDREN_PROC = ->(instance, childrenArray, attribute) {
-        childrenArray.map do |child|
+    CHILDREN_PROC = ->(key, value, instance) {
+        value.map do |child|
             Person.new(child)
         end
     }

@@ -86,7 +86,7 @@ class HasherInstanceTest < Minitest::Test
 
   include HasherTestMethods
 
-  DOUBLER_PROC = ->(instance, value, attribute) {
+  DOUBLER_PROC = ->(attribute, value, instance) {
     value * 2
   }
 
