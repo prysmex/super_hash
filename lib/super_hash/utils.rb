@@ -40,29 +40,27 @@ module SuperHash
       hash
     end
   
-    def self.flatten_to_root(object, flatten_arrays: false)
+    def self.flatten_to_root(object, flatten_arrays: false, &block)
       raise TypeError.new("must be a Hash or Array, got #{object.class}") unless [Hash, Array].include?(object.class)
+
+      block_proc = Proc.new do |key_or_index, value, hash|
+        if (!block_given? || !value.is_a?(Hash) || yield(value)) && (value.is_a?(Hash) || (value.is_a?(Array) && flatten_arrays)) && !value.empty?
+          flatten_to_root(value, {flatten_arrays: flatten_arrays}, &block).map do |flat_k, v|
+            hash["#{key_or_index}.#{flat_k}".to_sym] = v
+          end
+        else
+          hash["#{key_or_index}".to_sym] = value
+        end
+      end
 
       case object
       when Hash
         object.each_with_object({}) do |(key, value), hash|
-          if (value.is_a?(Hash) || (value.is_a?(Array) && flatten_arrays)) && !value.empty?
-            flatten_to_root(value, {flatten_arrays: flatten_arrays}).map do |flat_k, v|
-              hash["#{key}.#{flat_k}".to_sym] = v
-            end
-          else
-            hash["#{key}".to_sym] = value
-          end
+          block_proc.call(key, value, hash)
         end
       when Array
         object.each_with_object({}).with_index do |(value, hash), index|
-          if (value.is_a?(Hash) || (value.is_a?(Array) && flatten_arrays)) && !value.empty?
-            flatten_to_root(value, {flatten_arrays: flatten_arrays}).map do |flat_k, v|
-              hash["#{index}.#{flat_k}".to_sym] = v
-            end
-          else
-            hash["#{index}".to_sym] = value
-          end
+          block_proc.call(index, value, hash)
         end
       end
     
