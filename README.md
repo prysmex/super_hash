@@ -9,9 +9,8 @@ SuperHash provides:
 - Requiring some keys to be present with error raising
 - Setting a default value to a key
 - Setting transforms for specific keys
-- Ensuring all keys are symbolized
+- Ensuring all keys are symbolized (powered by ActiveSupport)
 - Accepting only whitelisted keys (default behavior)
-
 
 ## Installation
 
@@ -30,7 +29,6 @@ Or install it yourself as:
     $ gem install super_hash
 
 ## Usage
-
 
 ### Create a simple class
 Let's create Person class that extends from SuperHash::Hasher with 3 attributes: gender, name and age
@@ -52,13 +50,15 @@ person[:gender] # 'male'
 # person.is_a? Hash # => true
 ```
 
-In this simple example all attributes are required, so this will fail 
+In this simple example all attributes are required, so this will fail
+
 ```ruby
 person = Person.new({name: 'John', age: 22}) # SuperHash::Exceptions::PropertyError (The attribute 'gender' is required)
 person = Person.new({name: 'John', age: 22, gender: nil}) # SuperHash::Exceptions::PropertyError (The attribute 'gender' is required)
 ```
 
 ### Optional attributes
+
 To create an optional attribute we use the `attribute?` class methodm instead of `attribute`.
 
 ```ruby
@@ -76,16 +76,18 @@ person2 = Person.new({name: 'John', age: 22, gender: 'male'})
 ### Dynamic attributes
 
 In the previous examples, assigning an unknown attribute will cause an exception
+
 ```ruby
 person = Person.new({name: 'John', age: 22, likes_coffee: false}) # SuperHash::Exceptions::PropertyError (The attribute 'likes_coffee' is required)
 ```
 
 To allow dynamic attributes we need to set the instance variable `@allow_dynamic_attributes` as true
+
 ```ruby
 class Person < ::SuperHash::Hasher
-    
+
     instance_variable_set('@allow_dynamic_attributes', true)
-    
+
     attribute :'name'
     attribute :'age'
     attribute? :gender
@@ -94,14 +96,16 @@ end
 # Now we know John does not like coffee
 person = Person.new({name: 'John', age: 22, likes_coffee: false})
 ```
+
 ### Attribute validations
 
 If we want to add validations to our attributes we can use the power of dry-types gem
+
 ```ruby
 class Person < ::SuperHash::Hasher
-    
+
     instance_variable_set('@allow_dynamic_attributes', true)
-    
+
     attribute :'name'
     attribute :'age', {
         type: Types::Integer
@@ -119,10 +123,11 @@ person = Person.new({name: 'John', age: 22, gender: nil}) # Notice the .optional
 ### Default values
 
 ```ruby
+
 class Person < ::SuperHash::Hasher
-    
+
     instance_variable_set('@allow_dynamic_attributes', true)
-    
+
     attribute :'name'
     attribute :'nickname', {
         default: ->(instance) { instance[:name] }
@@ -143,18 +148,19 @@ person = Person.new({name: 'John', age: 22}) # {:name=>"John", :age=>22, :nickna
 ```
 
 ### Attribute transforms
+
 ```ruby
 
 class Person < ::SuperHash::Hasher
-    
+
     instance_variable_set('@allow_dynamic_attributes', true)
-    
+
     CHILDREN_PROC = ->(key, value, instance) {
         value.map do |child|
             Person.new(child)
         end
     }
-    
+
     attribute :'name'
     attribute :'nickname', {
         default: ->(instance) { instance[:name] }
@@ -176,13 +182,17 @@ person = Person.new({name: 'John', age: 22, children: [{name: 'John Jr', age: 2}
 person.class #Person
 person[:children].first.class #Person
 ```
+
 ### Update attribute
+
 if you want to update an attribute's configuration, you can always use `update_attribute`
+
 ```ruby
  Person.update_attribute(:age, {required: false})
 ```
 
 ### Callbacks
+
 ```ruby
 class SomeHash < ::SuperHash::Hasher
     attribute :'main_data'
@@ -199,6 +209,7 @@ some_hash[:main_data_mirror][:foo] # => 22
 ### Known issues
 
 You are not ensured that all keys will always be symbols, here are some examples:
+
 - Some methods like .merge!() will actually allow setting string keys without any errors being thrown
 - Manually setting a hash in a property `instance[:some_symbol_key] = {'a_string_key' => 2}`
 

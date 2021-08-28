@@ -1,15 +1,22 @@
 PATH
   remote: .
   specs:
-    super_hash (0.1.11)
+    super_hash (0.1.12)
+      activesupport (~> 5)
       dry-types
 
 GEM
   remote: https://rubygems.org/
   specs:
+    activesupport (5.2.6)
+      concurrent-ruby (~> 1.0, >= 1.0.2)
+      i18n (>= 0.7, < 2)
+      minitest (~> 5.1)
+      tzinfo (~> 1.1)
     ansi (1.5.0)
     builder (3.2.4)
-    concurrent-ruby (1.1.8)
+    byebug (9.1.0)
+    concurrent-ruby (1.1.9)
     dry-configurable (0.12.1)
       concurrent-ruby (~> 1.0)
       dry-core (~> 0.5, >= 0.5.0)
@@ -28,6 +35,8 @@ GEM
       dry-core (~> 0.5, >= 0.5)
       dry-inflector (~> 0.1, >= 0.1.2)
       dry-logic (~> 1.0, >= 1.0.2)
+    i18n (1.8.10)
+      concurrent-ruby (~> 1.0)
     minitest (5.14.4)
     minitest-reporters (1.4.3)
       ansi
@@ -36,12 +45,16 @@ GEM
       ruby-progressbar
     rake (10.5.0)
     ruby-progressbar (1.11.0)
+    thread_safe (0.3.6)
+    tzinfo (1.2.9)
+      thread_safe (~> 0.1)
 
 PLATFORMS
   ruby
 
 DEPENDENCIES
   bundler (~> 1.17)
+  byebug (~> 9.1.0)
   minitest (>= 5.14)
   minitest-reporters (>= 1.4)
   rake (~> 10.0)

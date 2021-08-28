@@ -52,8 +52,3 @@ class HelperTest < Minitest::Test
   # end
 
 end
-
-class DeepKeysTransform < Minitest::Test
-
-
-end

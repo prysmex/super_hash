@@ -8,6 +8,7 @@ module Types
 end
 
 module SuperHash
+
   class Hasher < ::Hash
     
     # ToDo only include if configured
@@ -163,7 +164,7 @@ module SuperHash
       if init_value.is_a? ::Hash
         
         # ToDo remove this for performance issues
-        init_value = SuperHash::DeepKeysTransform.symbolize_recursive(init_value)
+        init_value = init_value.deep_symbolize_keys
         
         #set init_value
         set_callbacks = self.class.after_set_callbacks
