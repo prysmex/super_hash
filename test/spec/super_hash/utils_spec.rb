@@ -1,9 +1,18 @@
 require 'test_helper'
+require 'json'
 
-class HelperTest < Minitest::Test
+class HelperBuryTest < Minitest::Test
 
-  def test_bury_complex
-    test_path = [:'tes.yt', 'as/?df', '__.__', '93.90', 9]
+  def test_bury_requires_3_args
+    assert_raises(ArgumentError){ SuperHash::Utils.bury({}, true) }
+  end
+
+  def test_bury_first_argument_must_be_hash_like
+    assert_raises(TypeError){ SuperHash::Utils.bury([], 'test', true) }
+  end
+
+  def test_bury_complex_path
+    test_path = [:'tes.yt', 'as/?df', '__.__', 7, '93.90', 9]
     value = 1
     hash = {}
     SuperHash::Utils.bury(hash, *test_path, value)
@@ -12,43 +21,90 @@ class HelperTest < Minitest::Test
 
   def test_bury_does_not_sibling_keys
     hash = {}
-    path_1 = [:some_data, :test_1]
-    path_2 = [:some_data, :test_2]
-    SuperHash::Utils.bury(hash, *path_1, true)
-    SuperHash::Utils.bury(hash, *path_2, true)
-    assert_equal true, hash.dig(*path_1)
-    assert_equal true, hash.dig(*path_2)
+
+    paths = [
+      [:some_data, :some_data_2, :test_1],
+      [:some_data, :some_data_2, :test_2],
+      [:some_data, :some_data_3, :test_3]
+    ]
+
+    paths.each_with_index do |path, i|
+      SuperHash::Utils.bury(hash, *path, i)
+      assert_equal i, hash.dig(*path)
+    end
   end
 
-  # def test_flatten_to_root
+end
 
-  #   expected_value = {
-  #     :"level_1_1.level_2_1.level_3_1"=>[1, 2],
-  #     :"level_1_1.level_2_1.level_3_2"=>[
-  #       {:level_4_1=>1},
-  #       {:level_4_2=>{:level_5_1=>1}}
-  #     ]
-  #   }
+class HelperFlattenToRootTest < Minitest::Test
+  def compare_jsons(a, b)
+    assert_equal JSON.generate(a), JSON.generate(b)
+  end
 
-  #   flattened = SuperHash::Utils.flatten_to_root({
-  #     level_1_1: {
-  #       level_2_1: {
-  #         level_3_1: [1,2],
-  #         level_3_2: [
-  #           {
-  #             level_4_1: 1
-  #           },
-  #           {
-  #             level_4_2: {
-  #               level_5_1: 1
-  #             }
-  #           }
-  #         ]
-  #       }
-  #     }
-  #   })
+  def setup
+    @example = {
+      level_1_1: {
+        level_2_1: {
+          level_3_1: [1,2],
+          level_3_2: [
+            {
+              level_4_1: 1
+            },
+            {
+              level_4_2: {
+                level_5_1: 1
+              }
+            }
+          ]
+        }
+      }
+    }
+  end
 
-  #   #todo multiple asserts between expected value and flattened
-  # end
+  def test_flatten_to_root
+    flattened = SuperHash::Utils.flatten_to_root(@example)
+
+    expected_value = {
+      :"level_1_1.level_2_1.level_3_1"=>[1, 2],
+      :"level_1_1.level_2_1.level_3_2"=>[
+        {:level_4_1=>1},
+        {:level_4_2=>{:level_5_1=>1}}
+      ]
+    }
+
+    compare_jsons(flattened, expected_value)
+  end
+
+  def test_flatten_to_root_with_flattened_arrays
+    flattened = SuperHash::Utils.flatten_to_root(@example, {flatten_arrays: true})
+
+    expected_value = {
+      :"level_1_1.level_2_1.level_3_1.0"=>1,
+      :"level_1_1.level_2_1.level_3_1.1"=>2,
+      :"level_1_1.level_2_1.level_3_2.0.level_4_1"=>1,
+      :"level_1_1.level_2_1.level_3_2.1.level_4_2.level_5_1"=>1
+    }
+    compare_jsons(flattened, expected_value)
+  end
+
+  def test_flatten_to_root_with_custom_join
+    flattened = SuperHash::Utils.flatten_to_root(@example, join_with: '|')
+
+    expected_value = {
+      :"level_1_1|level_2_1|level_3_1"=>[1, 2],
+      :"level_1_1|level_2_1|level_3_2"=>[
+        {:level_4_1=>1},
+        {:level_4_2=>{:level_5_1=>1}}
+      ]
+    }
+
+    compare_jsons(flattened, expected_value)
+  end
+
+  def test_flatten_to_root_with_block
+    flattened = SuperHash::Utils.flatten_to_root(@example){ false }
+
+    compare_jsons(flattened, @example)
+  end
 
 end

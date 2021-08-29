@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    super_hash (0.1.12)
+    super_hash (0.1.13)
       activesupport (~> 5)
       dry-types
 
