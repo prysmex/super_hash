@@ -20,7 +20,6 @@ module SuperHash
   # - requiring some keys to be present with error raising
   # - setting a default value to a key
   # - setting transforms for specific keys
-  # - ensuring all keys are symbolized
   # - accepting only whitelisted keys
   #   - This is the default behavior, if dynamic attributes are
   #     required set @allow_dynamic_attributes to true in class
@@ -52,6 +51,10 @@ module SuperHash
     
     # ToDo only include if configured
     include Types
+
+    ATTRIBUTE_CLASSES = [
+      ::Symbol, ::String, ::Integer, ::Float
+    ].freeze
   
     # registers an after_set callback
     #
@@ -64,8 +67,8 @@ module SuperHash
   
     # registers an NONE REQUIRED attribute
     #
-    # @param attribute_name [Symbol] name of attribute
-    # @param options [Hash] Symbolized hash
+    # @param attribute_name [Object] see ATTRIBUTE_CLASSES
+    # @param options [Hash{Symbol}]
     # @return [Class] class where attribute was added
     def self.attribute?(attribute_name, options = {})
       options = options.merge({required: false})
@@ -74,8 +77,8 @@ module SuperHash
   
     # registers an REQUIRED attribute
     #
-    # @param attribute_name [Symbol] name of attribute
-    # @param options [Hash] Symbolized hash
+    # @param attribute_name [Object] see ATTRIBUTE_CLASSES
+    # @param options [Hash{Symbol}]
     # @return [Class] class where attribute was added
     def self.attribute(attribute_name, options = {})
       options = options.merge({required: true})
@@ -84,8 +87,8 @@ module SuperHash
 
     # updates or registers an attribute
     #
-    # @param attribute_name [Symbol] name of attribute
-    # @param options [Hash] Symbolized hash
+    # @param attribute_name [Object] see ATTRIBUTE_CLASSES
+    # @param options [Hash{Symbol}]
     # @return [Class] class where attribute was added
     def self.update_attribute(attribute_name, options = {})
       options = (attributes[attribute_name] || {}).merge(options)
@@ -94,19 +97,22 @@ module SuperHash
 
     # unregisters an attribute
     #
-    # @param attribute_name [Symbol] name of attribute
+    # @param attribute_name [Object] see ATTRIBUTE_CLASSES
     # @return [Hash] Hash of remaining attributes
     def self.remove_attribute(attribute_name)
       instance_variable_set('@attributes', attributes.reject{|k,v| k == attribute_name})
     end
   
-    # The actual attribute registration method.
+    # The actual attribute registration method
     #
-    # @param attribute_name [Symbol] name of attribute
-    # @param options [Hash] Symbolized hash
+    # @param attribute_name [Object] see ATTRIBUTE_CLASSES
+    # @param options [Hash{Symbol}]
     # @return [Class] class where attribute was added
     def self.register_attribute(attribute_name, options)
-      raise TypeError.new('attribute_name must be a symbol') unless attribute_name.is_a?(::Symbol)
+      unless ATTRIBUTE_CLASSES.include?(attribute_name.class)
+        raise TypeError.new("attribute_name must be a #{ATTRIBUTE_CLASSES.join(', ')}. Got: #{attribute_name.class}")
+      end
+      
       attributes[attribute_name] = options
       self
     end
@@ -118,10 +124,11 @@ module SuperHash
       attr_reader :allow_dynamic_attributes
       attr_reader :ignore_nil_default_values
     end
-    instance_variable_set('@attributes', {})
-    instance_variable_set('@after_set_callbacks', [])
-    instance_variable_set('@allow_dynamic_attributes', false)
-    instance_variable_set('@ignore_nil_default_values', true)
+    
+    @attributes = {}
+    @after_set_callbacks = []
+    @allow_dynamic_attributes = false
+    @ignore_nil_default_values = true
   
     # when a class in inherited from this one, add it to subclasses and
     # set instance variables
@@ -170,9 +177,6 @@ module SuperHash
       
       # iterate init_value and set all values
       if init_value.respond_to?(:each_pair)
-        # symbolize keys, ToDo remove this for performance issues
-        init_value = init_value.deep_symbolize_keys
-        
         set_callbacks = self.class.after_set_callbacks
         init_value.each do |att, value|
           self.[]=(
@@ -251,10 +255,6 @@ module SuperHash
     # @param [Array<Proc>] after_set_callbacks, warning: overrides procs to be called
     # @return [value]
     def []=(attribute, value, skip_validate_attribute: nil, after_set_callbacks: nil)
-      if !attribute.is_a? ::Symbol #15% performance loss
-        raise TypeError.new('only symbols are supported as attributes')
-      end
-      
       validate_attribute!(attribute, value) unless skip_validate_attribute
 
       unless self.class.allow_dynamic_attributes
@@ -278,6 +278,17 @@ module SuperHash
         instance_exec(attribute, value, &proc)
       end
     end
+
+    # Override Hash#update
+    def update(*other_hashes, &block)
+      other_hashes.each do |other_hash|
+        update_with_single_argument(other_hash, block)
+      end
+      self
+    end
+    
+    # Override Hash#merge!
+    alias_method :merge!, :update
 
     # sets all default values from defined attributes
     #
@@ -314,32 +325,41 @@ module SuperHash
     end
   
     private
-    
-    # Raises `SuperHash::Exceptions::PropertyError` if attribute is not defined
-    #
-    # @param [Symbol] attribute
-    # @return [void]
-    def assert_attribute_exists!(attribute)
-      unless self.class.has_attribute?(attribute)
-        raise SuperHash::Exceptions::PropertyError, "The attribute '#{attribute}' is not defined for #{self.class.name}."
+
+      def update_with_single_argument(other_hash, block)
+        other_hash.to_hash.each_pair do |key, value|
+          if block && key?(key)
+            value = block.call(key, self[key], value)
+          end
+          self[key] = value
+        end
       end
-    end
-  
-    # checks if an attribute is required
-    #
-    # @param [Symbol] attribute
-    # @return [Boolean]
-    def attr_required?(attribute)
-      !@skip_required_attrs.include?(attribute) &&
-          self.class.attr_required?(attribute)
-  
-      # condition = self.class.required_attributes[attribute][:condition]
-      # case condition
-      # when Proc   then !!instance_exec(&condition)
-      # when Symbol then !!send(condition)
-      # else             !!condition
-      # end
-    end
+      
+      # Raises `SuperHash::Exceptions::PropertyError` if attribute is not defined
+      #
+      # @param [Symbol] attribute
+      # @return [void]
+      def assert_attribute_exists!(attribute)
+        unless self.class.has_attribute?(attribute)
+          raise SuperHash::Exceptions::PropertyError, "The attribute '#{attribute}' is not defined for #{self.class.name}."
+        end
+      end
+    
+      # checks if an attribute is required
+      #
+      # @param [Symbol] attribute
+      # @return [Boolean]
+      def attr_required?(attribute)
+        !@skip_required_attrs.include?(attribute) &&
+            self.class.attr_required?(attribute)
+    
+        # condition = self.class.required_attributes[attribute][:condition]
+        # case condition
+        # when Proc   then !!instance_exec(&condition)
+        # when Symbol then !!send(condition)
+        # else             !!condition
+        # end
+      end
   
   end
   

@@ -14,10 +14,6 @@ end
 class HasherClassTest < Minitest::Test
   include HasherTestMethods
 
-  def test_extends_from_hash
-    assert_kind_of Hash, @new_hasher_class.new
-  end
-
   def test_does_not_allow_dynamic_attributes_by_default
     assert_equal false, @new_hasher_class.allow_dynamic_attributes
   end
@@ -34,8 +30,8 @@ class HasherClassTest < Minitest::Test
     assert_equal 0, @new_hasher_class.after_set_callbacks.size
   end
 
-  def test_raise_error_if_attribute_not_symbol
-    assert_raises(::TypeError) { @new_hasher_class.attribute('name') }
+  def test_raise_error_if_attribute_type_not_whitelisted
+    assert_raises(::TypeError) { @new_hasher_class.attribute({}) }
   end
 
   def test_can_define_required_attribute
@@ -90,20 +86,6 @@ class HasherInstanceTest < Minitest::Test
     value * 2
   }
 
-  #################
-  #symbolized keys#
-  #################
-
-  def test_may_allow_dynamic_properties
-    @new_hasher_class.instance_variable_set('@allow_dynamic_attributes', true)
-    instance = @new_hasher_class.new({'all_keys_will_be_symbols' => 1, :no_matter_what => 2})
-    assert_nil instance.keys.find{|k| !k.is_a? Symbol}
-  end
-
-  def test_raises_error_when_setting_none_symbol_key
-    @new_hasher_class.instance_variable_set('@allow_dynamic_attributes', true)
-    assert_raises(::TypeError) { @new_hasher_class.new()['hello'] = 2 }
-  end
 
   ####################
   #dynamic properties#

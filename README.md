@@ -9,7 +9,6 @@ SuperHash provides:
 - Requiring some keys to be present with error raising
 - Setting a default value to a key
 - Setting transforms for specific keys
-- Ensuring all keys are symbolized (powered by ActiveSupport)
 - Accepting only whitelisted keys (default behavior)
 
 ## Installation
@@ -210,14 +209,6 @@ some_hash[:main_data_mirror][:foo] # => 22
 
 - bury
 - flatten_to_root
-
-### Known issues
-
-You are not ensured that all keys will always be symbols, here are some examples:
-
-- Some methods like .merge!() will actually allow setting string keys without any errors being thrown
-- Manually setting a hash in a property `instance[:some_symbol_key] = {'a_string_key' => 2}`
-
 
 ## Development
 
