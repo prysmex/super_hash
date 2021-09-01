@@ -206,6 +206,11 @@ some_hash = SomeHash.new({main_data: {foo: 22} })
 some_hash[:main_data_mirror][:foo] # => 22
 ```
 
+### Helpers
+
+- bury
+- flatten_to_root
+
 ### Known issues
 
 You are not ensured that all keys will always be symbols, here are some examples:
