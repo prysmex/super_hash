@@ -1,6 +1,6 @@
 # SuperHash
 
-The idea of the SuperHash is to provide hashes with extended functionality by adding the concept of 'attributes'.
+The idea of the SuperHash is to provide Hash-like classes with extended functionality by adding the concept of 'attributes'.
 Attributes allow to have a powerful API for controlling what data can be set and more control over how the data is managed.
 
 SuperHash provides:
@@ -30,10 +30,13 @@ Or install it yourself as:
 ## Usage
 
 ### Create a simple class
+
 Let's create Person class that extends from SuperHash::Hasher with 3 attributes: gender, name and age
 
 ```ruby
-class Person < ::SuperHash::Hasher
+class Person < Hash
+    include SuperHash::Hasher
+
     attribute :'name'
     attribute :'age'
     attribute :gender
@@ -61,7 +64,9 @@ person = Person.new({name: 'John', age: 22, gender: nil}) # SuperHash::Exception
 To create an optional attribute we use the `attribute?` class methodm instead of `attribute`.
 
 ```ruby
-class Person < ::SuperHash::Hasher
+class Person < Hash
+    include SuperHash::Hasher
+
     attribute :'name'
     attribute :'age'
     attribute? :gender
@@ -83,9 +88,10 @@ person = Person.new({name: 'John', age: 22, likes_coffee: false}) # SuperHash::E
 To allow dynamic attributes we need to set the instance variable `@allow_dynamic_attributes` as true
 
 ```ruby
-class Person < ::SuperHash::Hasher
+class Person < Hash
+    include SuperHash::Hasher
 
-    instance_variable_set('@allow_dynamic_attributes', true)
+    @allow_dynamic_attributes = true
 
     attribute :'name'
     attribute :'age'
@@ -101,9 +107,10 @@ person = Person.new({name: 'John', age: 22, likes_coffee: false})
 If we want to add validations to our attributes we can use the power of dry-types gem
 
 ```ruby
-class Person < ::SuperHash::Hasher
+class Person < Hash
+    include SuperHash::Hasher
 
-    instance_variable_set('@allow_dynamic_attributes', true)
+    @allow_dynamic_attributes = true
 
     attribute :'name'
     attribute :'age', {
@@ -123,9 +130,10 @@ person = Person.new({name: 'John', age: 22, gender: nil}) # Notice the .optional
 
 ```ruby
 
-class Person < ::SuperHash::Hasher
+class Person < Hash
+    include SuperHash::Hasher
 
-    instance_variable_set('@allow_dynamic_attributes', true)
+    @allow_dynamic_attributes = true
 
     attribute :'name'
     attribute :'nickname', {
@@ -150,9 +158,10 @@ person = Person.new({name: 'John', age: 22}) # {:name=>"John", :age=>22, :nickna
 
 ```ruby
 
-class Person < ::SuperHash::Hasher
+class Person < Hash
+    include SuperHash::Hasher
 
-    instance_variable_set('@allow_dynamic_attributes', true)
+    @allow_dynamic_attributes = true
 
     CHILDREN_PROC = ->(key, value, instance) {
         value.map do |child|
@@ -193,11 +202,13 @@ if you want to update an attribute's configuration, you can always use `update_a
 ### Callbacks
 
 ```ruby
-class SomeHash < ::SuperHash::Hasher
+class SomeHash < Hash
+    include SuperHash::Hasher
+
     attribute :'main_data'
     attribute :'main_data_mirror'
-    after_set ->(attr_name, value) {
-      self[:main_data_mirror] = self[:main_data] if attr_name == :main_data
+    after_set ->(attr_name) {
+      self[:main_data_mirror] = self[:main_data] if attr_name.nil? || attr_name == :main_hash
     }
 end
 

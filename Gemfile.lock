@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    super_hash (0.1.15)
+    super_hash (0.1.16)
       dry-types
 
 GEM

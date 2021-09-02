@@ -2,7 +2,8 @@ require "test_helper"
 
 module HasherTestMethods
   def setup
-    @new_hasher_class = Object.const_set('NewHasher', Class.new(SuperHash::Hasher))
+    @new_hasher_class = Object.const_set('NewHasher', Class.new(Hash))
+    @new_hasher_class.include(SuperHash::Hasher)
   end
 
   def teardown
@@ -14,19 +15,10 @@ end
 class HasherClassTest < Minitest::Test
   include HasherTestMethods
 
-  def test_does_not_allow_dynamic_attributes_by_default
+  def test_defaults
     assert_equal false, @new_hasher_class.allow_dynamic_attributes
-  end
-
-  def test_has_no_attributes_by_default
     assert_equal 0, @new_hasher_class.attributes.size
-  end
-
-  def test_ignore_nil_default_values_by_default
     assert_equal true, @new_hasher_class.ignore_nil_default_values
-  end
-
-  def test_has_no_after_set_callbacks_by_default
     assert_equal 0, @new_hasher_class.after_set_callbacks.size
   end
 
@@ -78,6 +70,7 @@ class HasherClassTest < Minitest::Test
 
 end
 
+
 class HasherInstanceTest < Minitest::Test
 
   include HasherTestMethods
@@ -86,7 +79,6 @@ class HasherInstanceTest < Minitest::Test
     value * 2
   }
 
-
   ####################
   #dynamic properties#
   ####################
@@ -94,6 +86,8 @@ class HasherInstanceTest < Minitest::Test
   def test_raises_error_when_unknown_key_and_dynamic_not_allowed
     assert_raises(::SuperHash::Exceptions::PropertyError) { @new_hasher_class.new({hello: 1}) }
     assert_raises(::SuperHash::Exceptions::PropertyError) { @new_hasher_class.new()[:hello] = 1 }
+    assert_raises(::SuperHash::Exceptions::PropertyError) { @new_hasher_class.new().merge!(hello: 1) }
+    assert_raises(::SuperHash::Exceptions::PropertyError) { @new_hasher_class.new().update(hello: 1) }
   end
 
   def test_allow_to_get_unknown_keys
@@ -102,8 +96,17 @@ class HasherInstanceTest < Minitest::Test
 
   def test_may_allow_dynamic_properties
     @new_hasher_class.instance_variable_set('@allow_dynamic_attributes', true)
+
+    # init
     assert_equal 1, @new_hasher_class.new({hello: 1})[:hello]
-    assert_equal 1, @new_hasher_class.new()[:hello] = 1
+
+    # set
+    instance =  @new_hasher_class.new()
+    instance[:hello] = 1
+    assert_equal 1, instance[:hello]
+
+    assert_equal 1, @new_hasher_class.new().merge!(hello: 1)[:hello]
+    assert_equal 1, @new_hasher_class.new().update(hello: 1)[:hello]
   end
 
   #####################
@@ -193,13 +196,13 @@ class HasherInstanceTest < Minitest::Test
 
   def test_after_set_callback
     @new_hasher_class.attribute :'main_hash'
-    @new_hasher_class.attribute :'main_hash_mirror'
-    @new_hasher_class.after_set ->(attr_name, value) {
-      self[:main_hash_mirror] = self[:main_hash] if attr_name == :main_hash
+    @new_hasher_class.attribute? :'main_hash_mirror'
+    @new_hasher_class.after_set ->(attr_name) {
+      self[:main_hash_mirror] = self[:main_hash] if attr_name.nil? || attr_name == :main_hash
     }
     instance = @new_hasher_class.new({main_hash: {some_data: 1}})
 
-    assert_equal 1, instance[:main_hash_mirror][:some_data]
+    assert_equal 1, instance.dig(:main_hash_mirror, :some_data)
   end
 
 end
