@@ -143,14 +143,14 @@ class HasherInstanceTest < Minitest::Test
   
   def test_default_values_are_overridable
     @new_hasher_class.attribute :'name', {
-      default: ->(instance) { 'John' }
+      default: ->(data) { 'John' }
     }
     assert_equal 'Yoda', @new_hasher_class.new({name: 'Yoda'})[:name]
   end
 
   def test_can_define_default_values
     @new_hasher_class.attribute :'name', {
-      default: ->(instance) { 'John' }
+      default: ->(data) { 'John' }
     }
     assert_equal 'John', @new_hasher_class.new()[:name]
   end
@@ -158,7 +158,7 @@ class HasherInstanceTest < Minitest::Test
   def test_can_define_default_values_from_other_values
     @new_hasher_class.attribute :'name'
     @new_hasher_class.attribute :'nickname', {
-      default: ->(instance) { instance[:name] }
+      default: ->(data) { data[:name] }
     }
     assert_equal 'John', @new_hasher_class.new(name: 'John')[:nickname]
   end
