@@ -42,7 +42,7 @@ module SuperHash
   #
   # @example required with instance level Proc
   #
-  #   attribute :key_name, default: ->(instance) { instance[:other_attribute] }
+  #   attribute :key_name, default: ->(data) { data[:other_attribute] }
   #
   # @example optional with instance level Proc
   #
@@ -356,7 +356,7 @@ module SuperHash
                 begin
                   val = attr_options[:default].dup
                   if val.is_a?(Proc)
-                    val.arity == 1 ? val.call(hash) : val.call
+                    val.arity == 1 ? instance_exec(hash, &val) : instance_exec(&val)
                   else
                     val
                   end

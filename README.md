@@ -137,7 +137,7 @@ class Person < Hash
 
     attribute :'name'
     attribute :'nickname', {
-        default: ->(instance) { instance[:name] }
+        default: ->(data) { data[:name] }
     }
     attribute :'age', {
         type: Types::Integer
@@ -171,7 +171,7 @@ class Person < Hash
 
     attribute :'name'
     attribute :'nickname', {
-        default: ->(instance) { instance[:name] }
+        default: ->(data) { data[:name] }
     }
     attribute :'age', {
         type: Types::Integer
