@@ -1,5 +1,3 @@
-require_relative 'version'
-
 module Types
   def self.included(base)
     require 'dry-types'
