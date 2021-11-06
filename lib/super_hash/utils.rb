@@ -70,7 +70,7 @@ module SuperHash
       should_continue = !block_given? || !value.respond_to?(:each_pair) || yield(value)
 
       if should_continue && valid_type && !value.empty?
-        flatten_to_root(value, {flatten_arrays: flatten_arrays, join_with: join_with}, &block).map do |flat_k, v|
+        flatten_to_root(value, flatten_arrays: flatten_arrays, join_with: join_with, &block).map do |flat_k, v|
           hash["#{key_or_index}#{join_with}#{flat_k}".to_sym] = v
         end
       else

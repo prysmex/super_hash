@@ -76,7 +76,7 @@ class HelperFlattenToRootTest < Minitest::Test
   end
 
   def test_flatten_to_root_with_flattened_arrays
-    flattened = SuperHash::Utils.flatten_to_root(@example, {flatten_arrays: true})
+    flattened = SuperHash::Utils.flatten_to_root(@example, flatten_arrays: true)
 
     expected_value = {
       :"level_1_1.level_2_1.level_3_1.0"=>1,

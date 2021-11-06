@@ -165,7 +165,7 @@ class HasherInstanceTest < Minitest::Test
 
   def test_can_define_default_values_with_dry_types
     @new_hasher_class.attribute :'name', {
-      type: Types::String.default('Yoda')
+      type: Types::String.default('Yoda'.freeze)
     }
     assert_equal 'Yoda', @new_hasher_class.new()[:name]
   end
