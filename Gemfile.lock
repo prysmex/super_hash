@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    super_hash (0.2.2)
+    super_hash (0.3.0)
       dry-types
 
 GEM
@@ -9,45 +9,49 @@ GEM
   specs:
     ansi (1.5.0)
     builder (3.2.4)
-    byebug (9.1.0)
-    concurrent-ruby (1.1.9)
-    dry-configurable (0.13.0)
+    concurrent-ruby (1.2.2)
+    debug (1.7.1)
+      irb (>= 1.5.0)
+      reline (>= 0.3.1)
+    dry-core (1.0.1)
       concurrent-ruby (~> 1.0)
-      dry-core (~> 0.6)
-    dry-container (0.9.0)
+      zeitwerk (~> 2.6)
+    dry-inflector (1.0.0)
+    dry-logic (1.5.0)
       concurrent-ruby (~> 1.0)
-      dry-configurable (~> 0.13, >= 0.13.0)
-    dry-core (0.7.1)
+      dry-core (~> 1.0, < 2)
+      zeitwerk (~> 2.6)
+    dry-types (1.7.1)
       concurrent-ruby (~> 1.0)
-    dry-inflector (0.2.1)
-    dry-logic (1.2.0)
-      concurrent-ruby (~> 1.0)
-      dry-core (~> 0.5, >= 0.5)
-    dry-types (1.5.1)
-      concurrent-ruby (~> 1.0)
-      dry-container (~> 0.3)
-      dry-core (~> 0.5, >= 0.5)
-      dry-inflector (~> 0.1, >= 0.1.2)
-      dry-logic (~> 1.0, >= 1.0.2)
+      dry-core (~> 1.0)
+      dry-inflector (~> 1.0)
+      dry-logic (~> 1.4)
+      zeitwerk (~> 2.6)
+    io-console (0.6.0)
+    irb (1.6.2)
+      reline (>= 0.3.0)
     minitest (5.14.4)
-    minitest-reporters (1.4.3)
+    minitest-reporters (1.6.1)
       ansi
       builder
       minitest (>= 5.0)
       ruby-progressbar
-    rake (13.0.6)
-    ruby-progressbar (1.11.0)
+    rake (13.1.0)
+    reline (0.3.2)
+      io-console (~> 0.5)
+    ruby-progressbar (1.13.0)
+    zeitwerk (2.6.12)
 
 PLATFORMS
   ruby
 
 DEPENDENCIES
-  bundler (= 2.1.4)
-  byebug (~> 9.1.0)
-  minitest (>= 5.14)
-  minitest-reporters (>= 1.4)
-  rake (~> 13.0)
+  bundler (= 2.4.22)
+  debug (>= 1.0.0)
+  minitest (~> 5.14)
+  minitest-reporters (~> 1.6)
+  rake (~> 13.1)
   super_hash!
 
 BUNDLED WITH
-   2.1.4
+   2.4.22

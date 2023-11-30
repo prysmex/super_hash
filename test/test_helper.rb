@@ -2,6 +2,6 @@ require "minitest/autorun"
 require "minitest/spec"
 require "minitest/reporters"
 require "super_hash"
-require 'byebug'
+require "debug"
 
 Minitest::Reporters.use!

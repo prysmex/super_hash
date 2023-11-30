@@ -1,8 +1,7 @@
+# ToDo: require lazily when SuperHash::Hasher is included
 module Types
-  def self.included(base)
-    require 'dry-types'
-    include Dry.Types()
-  end
+  require 'dry-types'
+  include Dry.Types()
 end
 
 module SuperHash
@@ -47,9 +46,6 @@ module SuperHash
   #   attribute? :key_name, transform: All_OF_PROC
   #
   module Hasher
-    
-    # ToDo only include if configured
-    include Types
 
     ATTRIBUTE_CLASSES = [
       ::Symbol, ::String, ::Integer, ::Float
