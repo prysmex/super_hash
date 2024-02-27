@@ -7,8 +7,10 @@ class HelperBuryTest < Minitest::Test
     assert_raises(ArgumentError){ SuperHash::Utils.bury({}, true) }
   end
 
-  def test_bury_first_argument_must_be_hash_like
+  def test_bury_array_argument_must_be_indices_like
+    SuperHash::Utils.bury([], 0, true)
     assert_raises(TypeError){ SuperHash::Utils.bury([], 'test', true) }
+    assert_raises(TypeError){ SuperHash::Utils.bury({a: []}, :a, 'test', true) }
   end
 
   def test_bury_complex_path
@@ -19,7 +21,7 @@ class HelperBuryTest < Minitest::Test
     assert_equal value, hash.dig(*test_path)
   end
 
-  def test_bury_does_not_sibling_keys
+  def test_bury_sibling_keys
     hash = {}
 
     paths = [
@@ -34,6 +36,37 @@ class HelperBuryTest < Minitest::Test
     end
   end
 
+  def test_intermediate_array
+    hash = {
+      a: [{b: :c}],
+      d: []
+    }
+
+    paths = [
+      [:a, 0, :b],
+      [:a, 0, :e],
+      [:a, 1, :f],
+      [:d, 3],
+    ]
+
+    paths.each_with_index do |path, i|
+      SuperHash::Utils.bury(hash, *path, i)
+      assert_equal i, hash.dig(*path)
+    end
+  end
+
+  def test_root_array
+    array = []
+
+    paths = [
+      [1, :a, 3, :b]
+    ]
+
+    paths.each_with_index do |path, i|
+      SuperHash::Utils.bury(array, *path, i)
+      assert_equal i, array.dig(*path)
+    end
+  end
 end
 
 class HelperFlattenToRootTest < Minitest::Test

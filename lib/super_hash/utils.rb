@@ -22,22 +22,22 @@ module SuperHash
     
     # Deeply sets a value on a defined path
     #
-    # @param [Hash] hash to bury value into
+    # @param [Hash|Array] obj to bury value into
     # @param [] *args list of arguments, last argument is the value to set and all previous define the path
     #
-    # @return [Hash] mutated hash
-    def self.bury(hash, *args)
-      raise TypeError.new("first argument must respond to each_pair, got #{hash.class}") unless hash.respond_to?(:each_pair)
+    # @return [Hash] mutated obj
+    def self.bury(obj, *args)
       if args.count < 2
         raise ArgumentError.new('3 or more arguments required')
       elsif args.count == 2
-        hash[args[0]] = args[1]
+        obj[args[0]] = args[1]
       else
         arg = args.shift
-        hash[arg] = {} unless hash[arg]
-        bury(hash[arg], *args) unless args.empty?
+        obj[arg] = {} unless obj[arg]
+        bury(obj[arg], *args) unless args.empty?
       end
-      hash
+
+      obj
     end
   
     # Deeply flattens an hash. You can use the `flatten_arrays` param to allow arrays to be flattened
