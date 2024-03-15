@@ -1,7 +1,8 @@
 module SuperHash
   module Exceptions
-    class PropertyError < StandardError
-      def initialize(msg='')
+    # Used for validating attributes
+    class AttributeError < StandardError
+      def initialize(msg = '')
         super(msg)
       end
     end

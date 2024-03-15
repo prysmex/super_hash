@@ -1,4 +1,6 @@
-# ToDo: require lazily when SuperHash::Hasher is included
+# TODO: require lazily when SuperHash::Hasher is included
+#
+# Module used to initialize +Dry.Types+
 module Types
   require 'dry-types'
   include Dry.Types()
@@ -64,22 +66,20 @@ module SuperHash
       base.instance_variable_set('@ignore_nil_default_values', true)
     end
 
+    # class methods
     module ClassMethods
-      attr_reader :attributes
-      attr_reader :after_set_callbacks
-      attr_reader :allow_dynamic_attributes
-      attr_reader :ignore_nil_default_values
+      attr_reader :attributes, :after_set_callbacks, :allow_dynamic_attributes, :ignore_nil_default_values
 
       # when a class in inherited from this one, add it to subclasses and
       # set instance variables
-      def inherited(klass)
+      def inherited(klass) # rubocop:disable Metrics/AbcSize
         super
         (@subclasses ||= Set.new) << klass
         klass.instance_variable_set(
           '@attributes',
-          attributes.each_with_object({}) do |(key, value), hash|
-            hash[key] = value.each_with_object({}) do |(k, v), h|
-              h[k] = Marshal.load(Marshal.dump(v)) rescue v&.dup
+          attributes.transform_values do |value|
+            value.transform_values do |v|
+              Marshal.load(Marshal.dump(v)) rescue v&.dup # rubocop:disable Style/RescueModifier
             end
           end
         )
@@ -94,9 +94,10 @@ module SuperHash
       # @return [Proc] added proc
       def after_set(block)
         raise TypeError.new("Expected Proc, got #{block.class}") unless block.is_a? Proc
+
         after_set_callbacks.push(block)
       end
-    
+
       # registers an NONE REQUIRED attribute
       #
       # @param attribute_name [Object] see ATTRIBUTE_CLASSES
@@ -106,7 +107,7 @@ module SuperHash
         options = options.merge({required: false})
         register_attribute(attribute_name, options)
       end
-    
+
       # registers an REQUIRED attribute
       #
       # @param attribute_name [Object] see ATTRIBUTE_CLASSES
@@ -116,7 +117,7 @@ module SuperHash
         options = options.merge({required: true})
         register_attribute(attribute_name, options)
       end
-  
+
       # updates or registers an attribute
       #
       # @param attribute_name [Object] see ATTRIBUTE_CLASSES
@@ -126,15 +127,15 @@ module SuperHash
         options = (attributes[attribute_name] || {}).merge(options)
         register_attribute(attribute_name, options)
       end
-  
+
       # unregisters an attribute
       #
       # @param attribute_name [Object] see ATTRIBUTE_CLASSES
       # @return [Hash] Hash of remaining attributes
       def remove_attribute(attribute_name)
-        instance_variable_set('@attributes', attributes.reject{|k,v| k == attribute_name})
+        instance_variable_set('@attributes', attributes.reject { |k, _v| k == attribute_name })
       end
-    
+
       # The actual attribute registration method
       #
       # @param attribute_name [Object] see ATTRIBUTE_CLASSES
@@ -144,7 +145,7 @@ module SuperHash
         unless ATTRIBUTE_CLASSES.include?(attribute_name.class)
           raise TypeError.new("attribute_name must be a #{ATTRIBUTE_CLASSES.join(', ')}. Got: #{attribute_name.class}")
         end
-        
+
         attributes[attribute_name] = options
         self
       end
@@ -153,10 +154,10 @@ module SuperHash
       #
       # @param name [Symbol] name of attribute
       # @return [Boolean]
-      def has_attribute?(name)
+      def has_attribute?(name) # rubocop:disable Naming/PredicateName
         !attributes[name].nil?
       end
-    
+
       # Check to see if the specified attribute is required.
       #
       # @param name [Symbol] name of attribute
@@ -166,10 +167,11 @@ module SuperHash
       end
     end
 
+    # instance methods
     module InstanceMethods
 
       # You may initialize with an attributes hash
-      # 
+      #
       # @param [Hash, Object] init_value
       # @param [Proc] preinit_proc, allows custom initialization
       # @param [Array<Symbol>] skip_required_attrs
@@ -177,13 +179,13 @@ module SuperHash
         @skip_required_attrs = options[:skip_required_attrs] || []
 
         # allow some custom initialization with a proc
-        options[:preinit_proc].call(self) if options[:preinit_proc]
-        
+        options[:preinit_proc]&.call(self)
+
         # iterate init_value and set all values
         if init_value.respond_to?(:each_pair)
           set_defaults(init_value)
           init_value.each do |att, value|
-            self.[]=(
+            self.[]=( # rubocop:disable Layout/SpaceBeforeBrackets
               att,
               value,
               skip_after_set_callbacks: true
@@ -206,14 +208,14 @@ module SuperHash
       def klass_attribute(name)
         self.class.attributes[name]
       end
-  
+
       # Gets all definitions from owner class
       #
       # @return [Hash] definition of all attribute
       def klass_attributes
         self.class.attributes
       end
-    
+
       # run the following validations to an attribute:
       #
       # - if required and present
@@ -221,28 +223,28 @@ module SuperHash
       # @param [] name attribute
       # @param [] value allow to pass it if already available
       # @return [Nil]
-      def validate_attribute!(name, value=nil)
+      def validate_attribute!(name, value = nil)
         # prop = klass_attribute(name)
-        value = value || self[name]
-        if value.nil? && attr_required?(name)
-          raise SuperHash::Exceptions::PropertyError, "The attribute '#{name}' is required"
-        end
+        value ||= self[name]
+        return unless value.nil? && attr_required?(name)
+
+        raise Exceptions::AttributeError.new("The attribute '#{name}' is required")
       end
-    
+
       # # Retrieve a value from a key
       # #
       # # @param [Symbol] attribute
       # def [](attribute)
       #   super(attribute)
       # end
-    
+
       # Sets a value. The attribute must be valid unless one of the following:
       #
       # - @allow_dynamic_attributes is true
       # - skip_validate_attribute is passed as true
       #
       # @todo for some reason the returned value is the passed value even thought it is not returned
-      # 
+      #
       # @param [Symbol] attribute, name of the attribute
       # @param [Symbol] value, name of the attribute
       # @param [Boolean] skip_validate_attribute
@@ -252,26 +254,24 @@ module SuperHash
         # assert if value is valid
         validate_attribute!(attribute, value) unless skip_validate_attribute
 
-        unless self.class.allow_dynamic_attributes
-          assert_attribute_exists!(attribute)
-        end
-  
+        assert_attribute_exists!(attribute) unless self.class.allow_dynamic_attributes
+
         attribute_def = klass_attribute(attribute)
         if attribute_def
-          #transform value with transform
+          # transform value with transform
           transform = attribute_def[:transform]
           value = transform.call(attribute, value, self) if transform.is_a? Proc
-  
-          #transform value with type
+
+          # transform value with type
           type = attribute_def[:type]
           value = type[value] unless type.nil?
         end
-        
+
         super(attribute, value)
-        
+
         call_after_set_callbacks(attribute) unless skip_after_set_callbacks
       end
-  
+
       # Override Hash#update
       def update(*other_hashes, &block)
         other_hashes.each do |other_hash|
@@ -279,96 +279,96 @@ module SuperHash
         end
         self
       end
-      
-      # Override Hash#merge!
-      alias_method :merge!, :update
-    
+
+      # Override Hash#merge! to match overriden +update+
+      alias merge! update
+
       private
-  
-        def update_with_single_argument(other_hash, block)
-          other_hash.to_hash.each_pair do |key, value|
-            if block && key?(key)
-              value = block.call(key, self[key], value)
-            end
-            self[key] = value
+
+      def update_with_single_argument(other_hash, block)
+        other_hash.to_hash.each_pair do |key, value|
+          value = block.call(key, self[key], value) if block && key?(key)
+          self[key] = value
+        end
+      end
+
+      # Call all registered callbacks
+      #
+      # @todo wrapp #call_after_set_callbacks in #initialize inside a block that temporarily
+      #   disables callbacks to prevent infinite loop
+      #
+      # @return [void]
+      def call_after_set_callbacks(attribute)
+        self.class.after_set_callbacks.each do |proc|
+          instance_exec(attribute, &proc)
+        end
+      end
+
+      # Raises `SuperHash::Exceptions::AttributeError` if attribute is not defined
+      #
+      # @param [Symbol] attribute
+      # @return [void]
+      def assert_attribute_exists!(attribute)
+        return if self.class.has_attribute?(attribute)
+
+        raise Exceptions::AttributeError.new(
+          "The attribute '#{attribute}' is not defined for #{self.class.name}."
+        )
+      end
+
+      # checks if an attribute is required
+      #
+      # @param [Symbol] attribute
+      # @return [Boolean]
+      def attr_required?(attribute)
+        !@skip_required_attrs.include?(attribute) &&
+          self.class.attr_required?(attribute)
+
+        # condition = self.class.required_attributes[attribute][:condition]
+        # case condition
+        # when Proc   then !!instance_exec(&condition)
+        # when Symbol then !!send(condition)
+        # else             !!condition
+        # end
+      end
+
+      # sets all default values from defined attributes
+      #
+      # @return [void]
+      def set_defaults(hash) # rubocop:disable Naming/AccessorMethodName, Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength, Metrics/PerceivedComplexity
+        ignore_nil_default_values = self.class.ignore_nil_default_values
+
+        klass_attributes.each do |name, attr_options|
+          next if hash.key?(name)
+
+          if attr_options.key?(:default) && attr_options[:type]&.default?
+            raise ArgumentError.new('having both default and type default is not supported')
           end
-        end
 
-        # Call all registered callbacks
-        #
-        # @todo wrapp #call_after_set_callbacks in #initialize inside a block that temporarily
-        #   disables callbacks to prevent infinite loop
-        #
-        # @return [void]
-        def call_after_set_callbacks(attribute)
-          self.class.after_set_callbacks.each do |proc|
-            instance_exec(attribute, &proc)
-          end
-        end
-        
-        # Raises `SuperHash::Exceptions::PropertyError` if attribute is not defined
-        #
-        # @param [Symbol] attribute
-        # @return [void]
-        def assert_attribute_exists!(attribute)
-          unless self.class.has_attribute?(attribute)
-            raise SuperHash::Exceptions::PropertyError, "The attribute '#{attribute}' is not defined for #{self.class.name}."
-          end
-        end
-      
-        # checks if an attribute is required
-        #
-        # @param [Symbol] attribute
-        # @return [Boolean]
-        def attr_required?(attribute)
-          !@skip_required_attrs.include?(attribute) &&
-              self.class.attr_required?(attribute)
-      
-          # condition = self.class.required_attributes[attribute][:condition]
-          # case condition
-          # when Proc   then !!instance_exec(&condition)
-          # when Symbol then !!send(condition)
-          # else             !!condition
-          # end
-        end
+          # set from attr_options[:default]
+          default_value = if attr_options.key?(:default)
+                            begin
+                              val = attr_options[:default].dup
+                              if val.is_a?(Proc)
+                                val.arity == 1 ? instance_exec(hash, &val) : instance_exec(&val)
+                              else
+                                val
+                              end
+                            rescue TypeError
+                              attr_options[:default]
+                            end
+                          # set from attr_options[:type]
+                          elsif attr_options[:type]&.default?
+                            attr_options[:type][Dry::Types::Undefined]
+                          end
 
-        # sets all default values from defined attributes
-        #
-        # @return [void]
-        def set_defaults(hash)
-          ignore_nil_default_values = self.class.ignore_nil_default_values
-          
-          klass_attributes.each do |name, attr_options|
-            next if hash.key?(name)
+          next if default_value.nil? && ignore_nil_default_values && !attr_required?(name)
 
-            if attr_options.key?(:default) && attr_options[:type]&.default?
-              raise ArgumentError.new('having both default and type default is not supported')
-            end
-
-            #set from attr_options[:default]
-            default_value = if attr_options.key?(:default)
-                begin
-                  val = attr_options[:default].dup
-                  if val.is_a?(Proc)
-                    val.arity == 1 ? instance_exec(hash, &val) : instance_exec(&val)
-                  else
-                    val
-                  end
-                rescue TypeError
-                  attr_options[:default]
-                end
-              #set from attr_options[:type]
-              elsif attr_options[:type]&.default?
-                attr_options[:type][Dry::Types::Undefined]
-              end
-    
-            next if default_value.nil? && ignore_nil_default_values && !attr_required?(name)
-            hash[name] = default_value
-
-          end
+          hash[name] = default_value
         end
+      end
 
     end
-  
+
   end
 end
