@@ -55,8 +55,8 @@ person[:gender] # 'male'
 In this simple example all attributes are required, so this will fail
 
 ```ruby
-person = Person.new({name: 'John', age: 22}) # SuperHash::Exceptions::PropertyError (The attribute 'gender' is required)
-person = Person.new({name: 'John', age: 22, gender: nil}) # SuperHash::Exceptions::PropertyError (The attribute 'gender' is required)
+person = Person.new({name: 'John', age: 22}) # SuperHash::Exceptions::AttributeError (The attribute 'gender' is required)
+person = Person.new({name: 'John', age: 22, gender: nil}) # SuperHash::Exceptions::AttributeError (The attribute 'gender' is required)
 ```
 
 ### Optional attributes
@@ -82,7 +82,7 @@ person2 = Person.new({name: 'John', age: 22, gender: 'male'})
 In the previous examples, assigning an unknown attribute will cause an exception
 
 ```ruby
-person = Person.new({name: 'John', age: 22, likes_coffee: false}) # SuperHash::Exceptions::PropertyError (The attribute 'likes_coffee' is required)
+person = Person.new({name: 'John', age: 22, likes_coffee: false}) # SuperHash::Exceptions::AttributeError (The attribute 'likes_coffee' is required)
 ```
 
 To allow dynamic attributes we need to set the instance variable `@allow_dynamic_attributes` as true
@@ -122,7 +122,7 @@ class Person < Hash
 end
 
 person = Person.new({name: 'John', age: '22'}) # Dry::Types::ConstraintError ("22" violates constraints (type?(Integer, "22") failed))
-person = Person.new({name: 'John', age: nil}) # SuperHash::Exceptions::PropertyError (The attribute 'age' is required)
+person = Person.new({name: 'John', age: nil}) # SuperHash::Exceptions::AttributeError (The attribute 'age' is required)
 person = Person.new({name: 'John', age: 22, gender: nil}) # Notice the .optional modifier on `gender` type validation
 ```
 

@@ -4,13 +4,13 @@ require 'json'
 class HelperBuryTest < Minitest::Test
 
   def test_bury_requires_3_args
-    assert_raises(ArgumentError){ SuperHash::Utils.bury({}, true) }
+    assert_raises(ArgumentError) { SuperHash::Utils.bury({}, true) }
   end
 
   def test_bury_array_argument_must_be_indices_like
     SuperHash::Utils.bury([], 0, true)
-    assert_raises(TypeError){ SuperHash::Utils.bury([], 'test', true) }
-    assert_raises(TypeError){ SuperHash::Utils.bury({a: []}, :a, 'test', true) }
+    assert_raises(TypeError) { SuperHash::Utils.bury([], 'test', true) }
+    assert_raises(TypeError) { SuperHash::Utils.bury({a: []}, :a, 'test', true) }
   end
 
   def test_bury_complex_path
@@ -18,6 +18,7 @@ class HelperBuryTest < Minitest::Test
     value = 1
     hash = {}
     SuperHash::Utils.bury(hash, *test_path, value)
+
     assert_equal value, hash.dig(*test_path)
   end
 
@@ -25,13 +26,14 @@ class HelperBuryTest < Minitest::Test
     hash = {}
 
     paths = [
-      [:some_data, :some_data_2, :test_1],
-      [:some_data, :some_data_2, :test_2],
-      [:some_data, :some_data_3, :test_3]
+      %i[some_data some_data_2 test_1],
+      %i[some_data some_data_2 test_2],
+      %i[some_data some_data_3 test_3]
     ]
 
     paths.each_with_index do |path, i|
       SuperHash::Utils.bury(hash, *path, i)
+
       assert_equal i, hash.dig(*path)
     end
   end
@@ -46,11 +48,12 @@ class HelperBuryTest < Minitest::Test
       [:a, 0, :b],
       [:a, 0, :e],
       [:a, 1, :f],
-      [:d, 3],
+      [:d, 3]
     ]
 
     paths.each_with_index do |path, i|
       SuperHash::Utils.bury(hash, *path, i)
+
       assert_equal i, hash.dig(*path)
     end
   end
@@ -64,21 +67,22 @@ class HelperBuryTest < Minitest::Test
 
     paths.each_with_index do |path, i|
       SuperHash::Utils.bury(array, *path, i)
+
       assert_equal i, array.dig(*path)
     end
   end
 end
 
 class HelperFlattenToRootTest < Minitest::Test
-  def compare_jsons(a, b)
-    assert_equal JSON.generate(a), JSON.generate(b)
+  def compare_jsons(value, expected)
+    assert_equal JSON.generate(value), JSON.generate(expected)
   end
 
-  def setup
+  def setup # rubocop:disable Metrics/MethodLength
     @example = {
       level_1_1: {
         level_2_1: {
-          level_3_1: [1,2],
+          level_3_1: [1, 2],
           level_3_2: [
             {
               level_4_1: 1
@@ -98,10 +102,10 @@ class HelperFlattenToRootTest < Minitest::Test
     flattened = SuperHash::Utils.flatten_to_root(@example)
 
     expected_value = {
-      :"level_1_1.level_2_1.level_3_1"=>[1, 2],
-      :"level_1_1.level_2_1.level_3_2"=>[
-        {:level_4_1=>1},
-        {:level_4_2=>{:level_5_1=>1}}
+      'level_1_1.level_2_1.level_3_1': [1, 2],
+      'level_1_1.level_2_1.level_3_2': [
+        {level_4_1: 1},
+        {level_4_2: {level_5_1: 1}}
       ]
     }
 
@@ -112,10 +116,10 @@ class HelperFlattenToRootTest < Minitest::Test
     flattened = SuperHash::Utils.flatten_to_root(@example, flatten_arrays: true)
 
     expected_value = {
-      :"level_1_1.level_2_1.level_3_1.0"=>1,
-      :"level_1_1.level_2_1.level_3_1.1"=>2,
-      :"level_1_1.level_2_1.level_3_2.0.level_4_1"=>1,
-      :"level_1_1.level_2_1.level_3_2.1.level_4_2.level_5_1"=>1
+      'level_1_1.level_2_1.level_3_1.0': 1,
+      'level_1_1.level_2_1.level_3_1.1': 2,
+      'level_1_1.level_2_1.level_3_2.0.level_4_1': 1,
+      'level_1_1.level_2_1.level_3_2.1.level_4_2.level_5_1': 1
     }
     compare_jsons(flattened, expected_value)
   end
@@ -124,10 +128,10 @@ class HelperFlattenToRootTest < Minitest::Test
     flattened = SuperHash::Utils.flatten_to_root(@example, join_with: '|')
 
     expected_value = {
-      :"level_1_1|level_2_1|level_3_1"=>[1, 2],
-      :"level_1_1|level_2_1|level_3_2"=>[
-        {:level_4_1=>1},
-        {:level_4_2=>{:level_5_1=>1}}
+      'level_1_1|level_2_1|level_3_1': [1, 2],
+      'level_1_1|level_2_1|level_3_2': [
+        {level_4_1: 1},
+        {level_4_2: {level_5_1: 1}}
       ]
     }
 
@@ -135,7 +139,7 @@ class HelperFlattenToRootTest < Minitest::Test
   end
 
   def test_flatten_to_root_with_block
-    flattened = SuperHash::Utils.flatten_to_root(@example){ false }
+    flattened = SuperHash::Utils.flatten_to_root(@example) { false }
 
     compare_jsons(flattened, @example)
   end
