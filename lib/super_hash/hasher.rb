@@ -60,10 +60,10 @@ module SuperHash
       base.extend ClassMethods
       base.include InstanceMethods
 
-      base.instance_variable_set('@attributes', {})
-      base.instance_variable_set('@after_set_callbacks', [])
-      base.instance_variable_set('@allow_dynamic_attributes', false)
-      base.instance_variable_set('@ignore_nil_default_values', true)
+      base.instance_variable_set(:@attributes, {})
+      base.instance_variable_set(:@after_set_callbacks, [])
+      base.instance_variable_set(:@allow_dynamic_attributes, false)
+      base.instance_variable_set(:@ignore_nil_default_values, true)
     end
 
     # class methods
@@ -76,16 +76,16 @@ module SuperHash
         super
         (@subclasses ||= Set.new) << klass
         klass.instance_variable_set(
-          '@attributes',
+          :@attributes,
           attributes.transform_values do |value|
             value.transform_values do |v|
               Marshal.load(Marshal.dump(v)) rescue v&.dup # rubocop:disable Style/RescueModifier
             end
           end
         )
-        klass.instance_variable_set('@after_set_callbacks', after_set_callbacks.dup)
-        klass.instance_variable_set('@allow_dynamic_attributes', allow_dynamic_attributes)
-        klass.instance_variable_set('@ignore_nil_default_values', ignore_nil_default_values)
+        klass.instance_variable_set(:@after_set_callbacks, after_set_callbacks.dup)
+        klass.instance_variable_set(:@allow_dynamic_attributes, allow_dynamic_attributes)
+        klass.instance_variable_set(:@ignore_nil_default_values, ignore_nil_default_values)
       end
 
       # registers an after_set callback
@@ -133,7 +133,7 @@ module SuperHash
       # @param attribute_name [Object] see ATTRIBUTE_CLASSES
       # @return [Hash] Hash of remaining attributes
       def remove_attribute(attribute_name)
-        instance_variable_set('@attributes', attributes.reject { |k, _v| k == attribute_name })
+        instance_variable_set(:@attributes, attributes.reject { |k, _v| k == attribute_name })
       end
 
       # The actual attribute registration method

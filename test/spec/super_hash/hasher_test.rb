@@ -2,7 +2,7 @@ require 'test_helper'
 
 module HasherTestMethods
   def setup
-    @new_hasher_class = Object.const_set('NewHasher', Class.new(Hash))
+    @new_hasher_class = Object.const_set(:NewHasher, Class.new(Hash))
     @new_hasher_class.include(SuperHash::Hasher)
   end
 
@@ -59,10 +59,10 @@ class HasherClassTest < Minitest::Test
 
   def test_subclass_copies_configuration
     NewHasher.attribute :name
-    NewHasher.instance_variable_set('@allow_dynamic_attributes', true)
-    NewHasher.instance_variable_set('@ignore_nil_default_values', false)
+    NewHasher.instance_variable_set(:@allow_dynamic_attributes, true)
+    NewHasher.instance_variable_set(:@ignore_nil_default_values, false)
 
-    other_hasher_klass = Object.const_set('NewHasher2', Class.new(NewHasher))
+    other_hasher_klass = Object.const_set(:NewHasher2, Class.new(NewHasher))
 
     assert_equal true, other_hasher_klass.has_attribute?(:name)
     assert_equal true, other_hasher_klass.allow_dynamic_attributes
@@ -97,7 +97,7 @@ class HasherInstanceTest < Minitest::Test
   end
 
   def test_may_allow_dynamic_properties
-    @new_hasher_class.instance_variable_set('@allow_dynamic_attributes', true)
+    @new_hasher_class.instance_variable_set(:@allow_dynamic_attributes, true)
 
     # init
     assert_equal 1, @new_hasher_class.new({hello: 1})[:hello]

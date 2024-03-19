@@ -68,7 +68,7 @@ module SuperHash
     # called by flatten_to_root, used to reduce code
     def self.set_values_to_hash(key_or_index, value, hash, flatten_arrays, join_with, key_method, &block) # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity, Metrics/ParameterLists
       valid_type = value.respond_to?(:each_pair) || (value.respond_to?(:to_ary) && flatten_arrays)
-      should_continue = !block_given? || !value.respond_to?(:each_pair) || yield(value)
+      should_continue = !block || !value.respond_to?(:each_pair) || yield(value)
 
       if should_continue && valid_type && !value.empty?
         flatten_to_root(value, flatten_arrays:, join_with:, &block).map do |flat_k, v|
