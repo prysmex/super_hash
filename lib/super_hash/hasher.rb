@@ -185,7 +185,7 @@ module SuperHash
         if init_value.respond_to?(:each_pair)
           set_defaults(init_value)
           init_value.each do |att, value|
-            self.[]=( # rubocop:disable Layout/SpaceBeforeBrackets
+            self.[]=(
               att,
               value,
               skip_after_set_callbacks: true

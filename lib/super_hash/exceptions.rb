@@ -3,7 +3,7 @@ module SuperHash
     # Used for validating attributes
     class AttributeError < StandardError
       def initialize(msg = '')
-        super(msg)
+        super
       end
     end
   end
