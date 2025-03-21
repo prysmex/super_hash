@@ -5,8 +5,8 @@ module SuperHash
   #
   module Helpers
 
-    def bury(*args)
-      Helpers.bury(self, *args)
+    def bury(*)
+      Helpers.bury(self, *)
     end
 
     def flatten_to_root(**args, &)
@@ -49,18 +49,18 @@ module SuperHash
     # &block if passed and returns false when iterating a Hash, execution is halted
     #
     # @return [Hash] <description>
-    def self.flatten_to_root(object, flatten_arrays: false, join_with: '.', key_method: :to_sym, &block)
+    def self.flatten_to_root(object, flatten_arrays: false, join_with: '.', key_method: :to_sym, &)
       unless object.respond_to?(:each_pair) || object.respond_to?(:to_ary)
         raise TypeError.new("must respond to each_pair or to_ary, got #{object.class}")
       end
 
       if object.respond_to?(:each_pair)
         object.each_with_object({}) do |(key, value), hash|
-          set_values_to_hash(key, value, hash, flatten_arrays, join_with, key_method, &block)
+          set_values_to_hash(key, value, hash, flatten_arrays, join_with, key_method, &)
         end
       elsif object.respond_to?(:to_ary)
         object.each_with_object({}).with_index do |(value, hash), index|
-          set_values_to_hash(index, value, hash, flatten_arrays, join_with, key_method, &block)
+          set_values_to_hash(index, value, hash, flatten_arrays, join_with, key_method, &)
         end
       end
     end
