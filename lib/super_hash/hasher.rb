@@ -154,7 +154,7 @@ module SuperHash
       #
       # @param name [Symbol] name of attribute
       # @return [Boolean]
-      def has_attribute?(name) # rubocop:disable Naming/PredicateName
+      def has_attribute?(name) # rubocop:disable Naming/PredicatePrefix
         !attributes[name].nil?
       end
 
