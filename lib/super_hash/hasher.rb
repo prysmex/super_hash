@@ -73,7 +73,13 @@ module SuperHash
       # when a class in inherited from this one, add it to subclasses and
       # set instance variables
       def inherited(klass) # rubocop:disable Metrics/AbcSize
+        # klass.instance_eval do
+        #   alias_method :regular_writer, :[]= unless method_defined?(:regular_writer)
+        #   alias_method :regular_update, :update unless method_defined?(:regular_update)
+        # end
+
         super
+
         (@subclasses ||= Set.new) << klass
         klass.instance_variable_set(
           :@attributes,
@@ -83,6 +89,7 @@ module SuperHash
             end
           end
         )
+
         klass.instance_variable_set(:@after_set_callbacks, after_set_callbacks.dup)
         klass.instance_variable_set(:@allow_dynamic_attributes, allow_dynamic_attributes)
         klass.instance_variable_set(:@ignore_nil_default_values, ignore_nil_default_values)
@@ -176,6 +183,11 @@ module SuperHash
       # @param [Proc] preinit_proc, allows custom initialization
       # @param [Array<Symbol>] skip_required_attrs
       def initialize(init_value = {}, options = {})
+        if init_value.respond_to?(:klass_attributes)
+          msg = 'do not pass instances of Hasher since passed value can be mutated with defaults'
+          raise StandardError.new(msg)
+        end
+
         @skip_required_attrs = options[:skip_required_attrs] || []
 
         # allow some custom initialization with a proc
@@ -183,21 +195,18 @@ module SuperHash
 
         # iterate init_value and set all values
         if init_value.respond_to?(:each_pair)
-          set_defaults(init_value)
+          set_defaults(init_value) unless options[:skip_defaults]
           init_value.each do |att, value|
-            self.[]=(
-              att,
-              value,
-              skip_after_set_callbacks: true
-            )
+            self.[]=(att, value, skip_after_set_callbacks: true)
           end
 
           call_after_set_callbacks(nil)
 
+          # TODO: why commented?
           # self.default = init_value.default if init_value.default
           # self.default_proc = init_value.default_proc if init_value.default_proc
         else
-          super(init_value)
+          super(init_value) # TODO: what case is handled in here?
         end
       end
 
@@ -243,6 +252,7 @@ module SuperHash
       # - @allow_dynamic_attributes is true
       # - skip_validate_attribute is passed as true
       #
+      # @override
       # @todo for some reason the returned value is the passed value even thought it is not returned
       #
       # @param [Symbol] attribute, name of the attribute
@@ -272,7 +282,9 @@ module SuperHash
         call_after_set_callbacks(attribute) unless skip_after_set_callbacks
       end
 
-      # Override Hash#update
+      # Override to ensure that update triggers attribute api by using `[]=`
+      #
+      # @override Hash#update
       def update(*other_hashes, &block)
         other_hashes.each do |other_hash|
           update_with_single_argument(other_hash, block)
@@ -280,11 +292,15 @@ module SuperHash
         self
       end
 
-      # Override Hash#merge! to match overriden +update+
+      # @override Hash#merge! to match overriden +update+
       alias merge! update
 
       private
 
+      # Ensures keys are set one by one using `[]=`
+      #
+      # @param [Hash] hash
+      # @return [void]
       def update_with_single_argument(other_hash, block)
         other_hash.to_hash.each_pair do |key, value|
           value = block.call(key, self[key], value) if block && key?(key)
@@ -332,8 +348,9 @@ module SuperHash
         # end
       end
 
-      # sets all default values from defined attributes
+      # sets all default values from defined attributes to the passed hash
       #
+      # @param [Hash] hash
       # @return [void]
       def set_defaults(hash) # rubocop:disable Naming/AccessorMethodName, Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength, Metrics/PerceivedComplexity
         ignore_nil_default_values = self.class.ignore_nil_default_values

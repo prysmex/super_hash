@@ -16,3 +16,5 @@ gem 'rubocop', '~> 1.81'
 gem 'rubocop-minitest', '~> 0.38'
 gem 'rubocop-performance', '~> 1.26'
 gem 'rubocop-rake', '~> 0.7'
+
+gem 'activesupport', '>= 8.0', '< 8.2'
