@@ -183,10 +183,10 @@ module SuperHash
       # @param [Proc] preinit_proc, allows custom initialization
       # @param [Array<Symbol>] skip_required_attrs
       def initialize(init_value = {}, options = {})
-        if init_value.respond_to?(:klass_attributes)
-          msg = 'do not pass instances of Hasher since passed value can be mutated with defaults'
-          raise StandardError.new(msg)
-        end
+        # if init_value.respond_to?(:klass_attributes)
+        #   msg = 'do not pass instances of Hasher since passed value can be mutated with defaults'
+        #   raise StandardError.new(msg)
+        # end
 
         @skip_required_attrs = options[:skip_required_attrs] || []
 
