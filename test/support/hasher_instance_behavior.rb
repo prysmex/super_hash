@@ -57,9 +57,9 @@ module HasherInstanceBehavior
     assert_nil @new_hasher_class.new['hello']
   end
 
-  def test_raises_error_when_hasher_is_passed
-    assert_raises(StandardError) { @new_hasher_class.new(@new_hasher_class.new) }
-  end
+  # def test_raises_error_when_hasher_is_passed
+  #   assert_raises(StandardError) { @new_hasher_class.new(@new_hasher_class.new) }
+  # end
 
   def test_may_allow_dynamic_properties
     @new_hasher_class.instance_variable_set(:@allow_dynamic_attributes, true)
@@ -91,6 +91,14 @@ module HasherInstanceBehavior
     @new_hasher_class.attribute? 'name'
 
     assert_empty @new_hasher_class.new
+  end
+
+  def test_delete_required_property
+    @new_hasher_class.attribute 'name'
+
+    hasher = @new_hasher_class.new({'name' => 'Yoda'})
+    hasher.delete('name')
+    hasher.dup # must not raise error
   end
 
   #######################

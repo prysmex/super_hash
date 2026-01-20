@@ -183,6 +183,11 @@ module SuperHash
       # @param [Proc] preinit_proc, allows custom initialization
       # @param [Array<Symbol>] skip_required_attrs
       def initialize(init_value = {}, options = {})
+        if options[:force_default_init]
+          super(init_value)
+          return
+        end
+
         # if init_value.respond_to?(:klass_attributes)
         #   msg = 'do not pass instances of Hasher since passed value can be mutated with defaults'
         #   raise StandardError.new(msg)
@@ -195,12 +200,12 @@ module SuperHash
 
         # iterate init_value and set all values
         if init_value.respond_to?(:each_pair)
-          set_defaults(init_value) unless options[:skip_defaults]
+          set_defaults_and_reqs(init_value) unless options[:skip_defaults]
           init_value.each do |att, value|
             self.[]=(att, value, skip_after_set_callbacks: true)
           end
 
-          call_after_set_callbacks(nil)
+          call_after_set_callbacks(nil) # call globaly (nil), on initialization.
 
           # TODO: why commented?
           # self.default = init_value.default if init_value.default
@@ -348,11 +353,12 @@ module SuperHash
         # end
       end
 
-      # sets all default values from defined attributes to the passed hash
+      # 1) Sets all default values from defined attributes to the passed hash
+      # 2) Trigger `required` validation by calling `self.[name] = nil` on required attributes with no value or default
       #
       # @param [Hash] hash
       # @return [void]
-      def set_defaults(hash) # rubocop:disable Naming/AccessorMethodName, Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength, Metrics/PerceivedComplexity
+      def set_defaults_and_reqs(hash) # rubocop:disable Naming/AccessorMethodName, Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength, Metrics/PerceivedComplexity
         ignore_nil_default_values = self.class.ignore_nil_default_values
 
         klass_attributes.each do |name, attr_options|
@@ -379,6 +385,7 @@ module SuperHash
                             attr_options[:type][Dry::Types::Undefined]
                           end
 
+          # ensure 'set' on required attributes to trigger validation
           next if default_value.nil? && ignore_nil_default_values && !attr_required?(name)
 
           hash[name] = default_value

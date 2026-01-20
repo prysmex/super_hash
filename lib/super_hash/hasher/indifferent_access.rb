@@ -56,7 +56,8 @@ module SuperHash
       #
       # Override for 2 reasons:
       #   - Ensure passed instance is a hash by calling `to_hash`. Another option could be to deep dup passed
-      #     values on initialization.
+      #     values on initialization (existing app code may actually expect mutations to happen, would need to fix).
+      #     (Needed with `force_default_init`?)
       #   - ActiveSupport::HashWithIndifferentAccess has its own implementation of dup, which ignores all
       #     instance variables. At least handle the simplest case where initialization options are passed
       #     again so any instance variables set during initialization are set in the same way on the dupped object.
@@ -65,16 +66,7 @@ module SuperHash
       # NOTE: Also called by deep_dup @see https://github.com/rails/rails/blob/v8.0.4/activesupport/lib/active_support/core_ext/object/deep_dup.rb
       #
       def dup
-        # new_hash = copy_defaults(self.class.new(to_hash, init_options))
-
-        # # prevent defaults from being re-added
-        # new_hash.each_key do |k|
-        #   new_hash.delete(k) unless key?(k)
-        # end
-
-        # new_hash
-
-        copy_defaults(self.class.new(to_hash, init_options, {skip_defaults: true}))
+        copy_defaults(self.class.new(to_hash, init_options, {force_default_init: true}))
       end
     end
   end
