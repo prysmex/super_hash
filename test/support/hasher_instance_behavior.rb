@@ -87,6 +87,12 @@ module HasherInstanceBehavior
     @new_hasher_class.new({'name' => 'Yoda'})
   end
 
+  def test_allow_ignoring_required_key
+    @new_hasher_class.attribute 'name'
+    assert_raises(::SuperHash::Exceptions::AttributeError) { @new_hasher_class.new({}, {skip_required_attrs: ['other']}) }
+    @new_hasher_class.new({}, {skip_required_attrs: ['name']})
+  end
+
   def test_property_may_be_optional
     @new_hasher_class.attribute? 'name'
 

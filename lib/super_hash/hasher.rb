@@ -193,7 +193,7 @@ module SuperHash
         #   raise StandardError.new(msg)
         # end
 
-        @skip_required_attrs = options[:skip_required_attrs] || []
+        @skip_required_attrs = options[:skip_required_attrs]
 
         # allow some custom initialization with a proc
         options[:preinit_proc]&.call(self)
@@ -342,7 +342,7 @@ module SuperHash
       # @param [Symbol] attribute
       # @return [Boolean]
       def attr_required?(attribute)
-        !@skip_required_attrs.include?(attribute) &&
+        !@skip_required_attrs&.include?(attribute) &&
           self.class.attr_required?(attribute)
 
         # condition = self.class.required_attributes[attribute][:condition]
